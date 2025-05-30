@@ -20,6 +20,7 @@ interface RatingFieldProps {
   label: string;
   description?: string;
   metadata: FieldMetadata;
+  disabled?: boolean;
 }
 
 export function RatingField({
@@ -28,6 +29,7 @@ export function RatingField({
   label,
   description,
   metadata,
+  disabled = false,
 }: RatingFieldProps) {
   const formContext = useFormContext();
   const [hoveredRating, setHoveredRating] = useState<number | null>(null);
@@ -37,8 +39,8 @@ export function RatingField({
   }
 
   // Extract rating configuration from metadata or use defaults
-  const maxRating = metadata.max || 5;
-  const allowHalf = metadata.allowHalf || false;
+  const maxRating = metadata?.max || 5;
+  const allowHalf = metadata?.allowHalf || false;
 
   return (
     <FormField
@@ -53,6 +55,8 @@ export function RatingField({
           starIndex: number,
           event: React.MouseEvent<HTMLButtonElement>
         ) => {
+          if (disabled) return;
+
           if (allowHalf) {
             const rect = event.currentTarget.getBoundingClientRect();
             const clickX = event.clientX - rect.left;
@@ -68,6 +72,8 @@ export function RatingField({
           starIndex: number,
           event: React.MouseEvent<HTMLButtonElement>
         ) => {
+          if (disabled) return;
+
           if (allowHalf) {
             const rect = event.currentTarget.getBoundingClientRect();
             const hoverX = event.clientX - rect.left;
@@ -115,11 +121,12 @@ export function RatingField({
                         fillState !== "empty"
                           ? "text-yellow-400 hover:text-yellow-500"
                           : "text-gray-300 hover:text-yellow-300"
-                      }`}
+                      } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
                       onClick={(event) => handleStarPartClick(index, event)}
                       onMouseEnter={(event) =>
                         handleStarPartHover(index, event)
                       }
+                      disabled={disabled}
                       aria-label={`Rate ${index + 1} out of ${maxRating} stars`}
                     >
                       {/* Background star */}

@@ -125,8 +125,12 @@ export const FileUploadSchema = z.object({
 // Rich text editor specific
 export const RichTextSchema = z.object({
   mode: z.enum(["wysiwyg", "markdown", "hybrid"]).optional(),
-  toolbar: z.array(z.string()).optional(), // ["bold", "italic", "link", "image"]
-  plugins: z.array(z.string()).optional(), // ["tables", "code", "emoji"]
+  toolbar: z
+    .array(
+      z.enum(["bold", "italic", "link", "image", "code", "quote", "underline"])
+    )
+    .optional(),
+  plugins: z.enum(["tables", "code", "emoji"]).optional(),
   maxLength: z.number().optional(),
   allowImages: z.boolean().optional(),
   allowTables: z.boolean().optional(),
@@ -234,6 +238,18 @@ export const RatingSchema = z.object({
   color: z.string().optional(), // Custom color for filled icons
 });
 
+// Add to the FieldMetadata interface
+export interface FieldExamples {
+  /** Basic example value */
+  basic?: unknown;
+  /** Edge case examples (min/max values, empty, etc.) */
+  edgeCases?: unknown[];
+  /** Realistic example data for documentation */
+  realistic?: unknown[];
+  /** Invalid examples that should fail validation */
+  invalid?: unknown[];
+}
+
 // Single comprehensive field metadata schema
 // No discriminated union - components use duck typing based on property presence
 export const FieldMetadataSchema = z.object({
@@ -288,6 +304,12 @@ export const FieldMetadataSchema = z.object({
 
   // Rating properties (if present, render as rating field)
   ...RatingSchema.shape,
+
+  /**
+   * Examples for documentation, testing, and demos
+   * If not provided, examples will be auto-generated
+   */
+  examples: z.custom<FieldExamples>().optional(),
 });
 
 export type FieldMetadata = z.infer<typeof FieldMetadataSchema>;

@@ -25,6 +25,7 @@ interface SelectFieldProps {
   label: string;
   description?: string;
   metadata: FieldMetadata;
+  disabled?: boolean;
 }
 
 export function SelectField({
@@ -34,6 +35,7 @@ export function SelectField({
   label,
   description,
   metadata,
+  disabled = false,
 }: SelectFieldProps) {
   const formContext = useFormContext();
 
@@ -53,7 +55,11 @@ export function SelectField({
             {label}
             {required && " *"}
           </FormLabel>
-          <Select value={field.value || ""} onValueChange={field.onChange}>
+          <Select
+            value={field.value || ""}
+            onValueChange={field.onChange}
+            disabled={disabled}
+          >
             <FormControl>
               <SelectTrigger>
                 <SelectValue placeholder={placeholder || `Select ${label}`} />

@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, within, userEvent, waitFor } from "@storybook/test";
 import { SchemaForm } from "./SchemaForm";
 import { z } from "zod/v4";

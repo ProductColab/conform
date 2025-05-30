@@ -7,14 +7,14 @@ import {
   resolveDynamicValue,
 } from "../utils/rule-evaluation";
 import type {
-  BaseConditionType,
-  ComplexConditionType,
-  RuleContextType,
+  BaseCondition,
+  ComplexCondition,
+  RuleContext,
 } from "../schemas/rule.schema";
 
 const createTestContext = (
   formData: Record<string, unknown> = {}
-): RuleContextType => ({
+): RuleContext => ({
   formData,
   user: { id: "123", role: "admin", name: "John Doe" },
   permissions: ["read", "write", "admin"],
@@ -282,21 +282,21 @@ describe("evaluateBaseCondition", () => {
       isEnabled: true,
     });
 
-    const condition1: BaseConditionType = {
+    const condition1: BaseCondition = {
       field: "status",
       operator: "equals",
       value: "active",
     };
     expect(evaluateBaseCondition(condition1, context)).toBe(true);
 
-    const condition2: BaseConditionType = {
+    const condition2: BaseCondition = {
       field: "count",
       operator: "greater_than",
       value: 5,
     };
     expect(evaluateBaseCondition(condition2, context)).toBe(true);
 
-    const condition3: BaseConditionType = {
+    const condition3: BaseCondition = {
       field: "isEnabled",
       operator: "equals",
       value: false,
@@ -310,7 +310,7 @@ describe("evaluateBaseCondition", () => {
       threshold: 100,
     });
 
-    const condition: BaseConditionType = {
+    const condition: BaseCondition = {
       field: "userRole",
       operator: "equals",
       value: {
@@ -331,7 +331,7 @@ describe("evaluateBaseCondition", () => {
         typeof value === "string" ? value.toLowerCase() : value,
     };
 
-    const condition: BaseConditionType = {
+    const condition: BaseCondition = {
       field: "email",
       operator: "equals",
       value: "john@example.com",
@@ -352,7 +352,7 @@ describe("evaluateComplexCondition", () => {
       isVerified: true,
     });
 
-    const condition: ComplexConditionType = {
+    const condition: ComplexCondition = {
       operator: "and",
       conditions: [
         { field: "status", operator: "equals", value: "active" },
@@ -364,7 +364,7 @@ describe("evaluateComplexCondition", () => {
     expect(evaluateComplexCondition(condition, context)).toBe(true);
 
     // Change one condition to make it false
-    const falseCondition: ComplexConditionType = {
+    const falseCondition: ComplexCondition = {
       operator: "and",
       conditions: [
         { field: "status", operator: "equals", value: "active" },
@@ -383,7 +383,7 @@ describe("evaluateComplexCondition", () => {
       isUrgent: false,
     });
 
-    const condition: ComplexConditionType = {
+    const condition: ComplexCondition = {
       operator: "or",
       conditions: [
         { field: "status", operator: "equals", value: "active" }, // false
@@ -395,7 +395,7 @@ describe("evaluateComplexCondition", () => {
     expect(evaluateComplexCondition(condition, context)).toBe(true);
 
     // All conditions false
-    const allFalseCondition: ComplexConditionType = {
+    const allFalseCondition: ComplexCondition = {
       operator: "or",
       conditions: [
         { field: "status", operator: "equals", value: "active" },
@@ -412,7 +412,7 @@ describe("evaluateComplexCondition", () => {
       status: "inactive",
     });
 
-    const condition: ComplexConditionType = {
+    const condition: ComplexCondition = {
       operator: "not",
       conditions: [{ field: "status", operator: "equals", value: "active" }],
     };
@@ -428,7 +428,7 @@ describe("evaluateComplexCondition", () => {
       region: "US",
     });
 
-    const nestedCondition: ComplexConditionType = {
+    const nestedCondition: ComplexCondition = {
       operator: "and",
       conditions: [
         { field: "isActive", operator: "equals", value: true },
@@ -458,7 +458,7 @@ describe("evaluateRuleCondition", () => {
       status: "active",
     });
 
-    const condition: BaseConditionType = {
+    const condition: BaseCondition = {
       field: "status",
       operator: "equals",
       value: "active",
@@ -473,7 +473,7 @@ describe("evaluateRuleCondition", () => {
       count: 10,
     });
 
-    const condition: ComplexConditionType = {
+    const condition: ComplexCondition = {
       operator: "and",
       conditions: [
         { field: "status", operator: "equals", value: "active" },
@@ -489,9 +489,9 @@ describe("evaluateRuleCondition", () => {
 
     const invalidCondition = {
       field: "nonexistent",
-      operator: "invalid_operator" as any,
+      operator: "invalid_operator",
       value: "test",
-    };
+    } as unknown as BaseCondition;
 
     // Should return false for invalid conditions instead of throwing
     expect(evaluateRuleCondition(invalidCondition, context)).toBe(false);

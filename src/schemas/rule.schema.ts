@@ -372,6 +372,9 @@ export const RuleAction = z.object({
     "trigger_validation",
     "show_warning",
     "show_error",
+    "showMessage", // For displaying messages to users
+    "redirect", // For navigation/redirects
+    "preventDefault", // For preventing default form behavior
     "custom", // For custom action functions
   ]),
   value: DynamicValue.optional(), // Value for actions like set_value, set_options
@@ -427,21 +430,21 @@ export const RuleEvaluationResult = z.object({
 });
 
 // Type exports
-export type ComparisonOperatorType = z.infer<typeof ComparisonOperator>;
-export type LogicalOperatorType = z.infer<typeof LogicalOperator>;
-export type RuleValueType = z.infer<typeof RuleValue>;
-export type FieldReferenceType = z.infer<typeof FieldReference>;
-export type ContextReferenceType = z.infer<typeof ContextReference>;
-export type FunctionReferenceType = z.infer<typeof FunctionReference>;
-export type DynamicValueType = z.infer<typeof DynamicValue>;
-export type BaseConditionType = z.infer<typeof BaseCondition>;
-export type ComplexConditionType = z.infer<typeof ComplexCondition>;
-export type RuleConditionType = z.infer<typeof RuleCondition>;
-export type RuleActionType = z.infer<typeof RuleAction>;
-export type RuleType = z.infer<typeof Rule>;
-export type RuleSetType = z.infer<typeof RuleSet>;
-export type RuleContextType = z.infer<typeof RuleContext>;
-export type RuleEvaluationResultType = z.infer<typeof RuleEvaluationResult>;
+export type ComparisonOperator = z.infer<typeof ComparisonOperator>;
+export type LogicalOperator = z.infer<typeof LogicalOperator>;
+export type RuleValue = z.infer<typeof RuleValue>;
+export type FieldReference = z.infer<typeof FieldReference>;
+export type ContextReference = z.infer<typeof ContextReference>;
+export type FunctionReference = z.infer<typeof FunctionReference>;
+export type DynamicValue = z.infer<typeof DynamicValue>;
+export type BaseCondition = z.infer<typeof BaseCondition>;
+export type ComplexCondition = z.infer<typeof ComplexCondition>;
+export type RuleCondition = z.infer<typeof RuleCondition>;
+export type RuleAction = z.infer<typeof RuleAction>;
+export type Rule = z.infer<typeof Rule>;
+export type RuleSet = z.infer<typeof RuleSet>;
+export type RuleContext = z.infer<typeof RuleContext>;
+export type RuleEvaluationResult = z.infer<typeof RuleEvaluationResult>;
 
 /**
  * Utility functions for creating common rule patterns
@@ -452,8 +455,8 @@ export const RuleBuilders = {
    */
   whenFieldEquals: (
     fieldName: string,
-    value: RuleValueType,
-    actions: RuleActionType[]
+    value: RuleValue,
+    actions: RuleAction[]
   ) =>
     Rule.parse({
       condition: {
@@ -470,7 +473,7 @@ export const RuleBuilders = {
   showWhenFieldEquals: (
     dependentField: string,
     targetField: string,
-    value: RuleValueType
+    value: RuleValue
   ) =>
     Rule.parse({
       condition: {
@@ -489,10 +492,7 @@ export const RuleBuilders = {
   /**
    * Create a rule with multiple AND conditions
    */
-  whenAllConditions: (
-    conditions: BaseConditionType[],
-    actions: RuleActionType[]
-  ) =>
+  whenAllConditions: (conditions: BaseCondition[], actions: RuleAction[]) =>
     Rule.parse({
       condition: {
         operator: "and",
@@ -504,10 +504,7 @@ export const RuleBuilders = {
   /**
    * Create a rule with multiple OR conditions
    */
-  whenAnyCondition: (
-    conditions: BaseConditionType[],
-    actions: RuleActionType[]
-  ) =>
+  whenAnyCondition: (conditions: BaseCondition[], actions: RuleAction[]) =>
     Rule.parse({
       condition: {
         operator: "or",
@@ -519,7 +516,7 @@ export const RuleBuilders = {
   /**
    * Create a rule based on user permissions
    */
-  whenUserHasPermission: (_permission: string, actions: RuleActionType[]) =>
+  whenUserHasPermission: (_permission: string, actions: RuleAction[]) =>
     Rule.parse({
       condition: {
         field: "permissions",

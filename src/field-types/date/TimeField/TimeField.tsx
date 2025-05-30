@@ -19,6 +19,7 @@ interface TimeFieldProps {
   label: string;
   description?: string;
   metadata: FieldMetadata;
+  disabled?: boolean;
 }
 
 export function TimeField({
@@ -27,6 +28,7 @@ export function TimeField({
   label,
   description,
   metadata,
+  disabled = false,
 }: TimeFieldProps) {
   const formContext = useFormContext();
 
@@ -34,7 +36,7 @@ export function TimeField({
     return null;
   }
 
-  const { placeholder } = metadata;
+  const { placeholder } = metadata || {};
 
   return (
     <FormField
@@ -57,6 +59,7 @@ export function TimeField({
                 type="time"
                 placeholder={placeholder || label}
                 aria-describedby={descriptionId}
+                disabled={disabled}
                 {...field}
                 value={field.value || ""}
               />

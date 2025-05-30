@@ -6,13 +6,13 @@ import {
   resolveDynamicValue,
 } from "../rule-evaluation";
 import type {
-  BaseConditionType,
-  ComplexConditionType,
-  RuleContextType,
+  BaseCondition,
+  ComplexCondition,
+  RuleContext,
 } from "../../schemas/rule.schema";
 
 describe("Rule Evaluation", () => {
-  let mockContext: RuleContextType;
+  let mockContext: RuleContext;
 
   beforeEach(() => {
     mockContext = {
@@ -269,7 +269,7 @@ describe("Rule Evaluation", () => {
 
   describe("Base Condition Evaluation", () => {
     it("should evaluate simple base condition", () => {
-      const condition: BaseConditionType = {
+      const condition: BaseCondition = {
         field: "age",
         operator: "greater_than",
         value: 18,
@@ -279,7 +279,7 @@ describe("Rule Evaluation", () => {
     });
 
     it("should evaluate condition with field reference", () => {
-      const condition: BaseConditionType = {
+      const condition: BaseCondition = {
         field: "age",
         operator: "greater_than",
         value: {
@@ -294,12 +294,12 @@ describe("Rule Evaluation", () => {
     });
 
     it("should evaluate condition with context reference", () => {
-      const contextWithUser: RuleContextType = {
+      const contextWithUser: RuleContext = {
         ...mockContext,
         user: { minAge: 21 },
       };
 
-      const condition: BaseConditionType = {
+      const condition: BaseCondition = {
         field: "age",
         operator: "greater_than_or_equal",
         value: {
@@ -314,7 +314,7 @@ describe("Rule Evaluation", () => {
 
   describe("Complex Condition Evaluation", () => {
     it("should evaluate AND conditions", () => {
-      const condition: ComplexConditionType = {
+      const condition: ComplexCondition = {
         operator: "and",
         conditions: [
           {
@@ -334,7 +334,7 @@ describe("Rule Evaluation", () => {
     });
 
     it("should evaluate OR conditions", () => {
-      const condition: ComplexConditionType = {
+      const condition: ComplexCondition = {
         operator: "or",
         conditions: [
           {
@@ -354,7 +354,7 @@ describe("Rule Evaluation", () => {
     });
 
     it("should evaluate NOT conditions", () => {
-      const condition: ComplexConditionType = {
+      const condition: ComplexCondition = {
         operator: "not",
         conditions: [
           {
@@ -383,7 +383,7 @@ describe("Rule Evaluation", () => {
         },
       };
 
-      const condition: BaseConditionType = {
+      const condition: BaseCondition = {
         field: "age",
         operator: "equals",
         value: {
@@ -408,7 +408,7 @@ describe("Rule Evaluation", () => {
       ).toBe(false);
 
       // Test where the function result actually equals the field value
-      const booleanCondition: BaseConditionType = {
+      const booleanCondition: BaseCondition = {
         field: "isActive",
         operator: "equals",
         value: {
@@ -453,7 +453,7 @@ describe("Rule Evaluation", () => {
     });
 
     it("should resolve nested field properties", () => {
-      const contextWithNested: RuleContextType = {
+      const contextWithNested: RuleContext = {
         formData: {
           user: { profile: { name: "John Doe" } },
         },
@@ -469,7 +469,7 @@ describe("Rule Evaluation", () => {
     });
 
     it("should resolve context references", () => {
-      const contextWithUser: RuleContextType = {
+      const contextWithUser: RuleContext = {
         ...mockContext,
         user: { role: "admin" },
       };
@@ -482,7 +482,7 @@ describe("Rule Evaluation", () => {
   describe("Error Handling", () => {
     it("should handle invalid operators gracefully", () => {
       expect(() => {
-        evaluateComparison("test", "invalid_operator" as any, "value");
+        evaluateComparison("test", "invalid_operator" as never, "value");
       }).toThrow("Unknown comparison operator: invalid_operator");
     });
 
@@ -493,7 +493,7 @@ describe("Rule Evaluation", () => {
     });
 
     it("should handle missing functions gracefully", () => {
-      const condition: BaseConditionType = {
+      const condition: BaseCondition = {
         field: "age",
         operator: "equals",
         value: {

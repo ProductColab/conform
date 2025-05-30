@@ -18,6 +18,7 @@ interface TextareaFieldProps {
   label: string;
   description?: string;
   metadata: FieldMetadata;
+  disabled?: boolean;
 }
 
 export function TextareaField({
@@ -26,6 +27,7 @@ export function TextareaField({
   label,
   description,
   metadata,
+  disabled = false,
 }: TextareaFieldProps) {
   const formContext = useFormContext();
 
@@ -33,7 +35,7 @@ export function TextareaField({
     return null;
   }
 
-  const { placeholder } = metadata;
+  const { placeholder } = metadata || {};
   const rows = getTextareaRows(metadata);
 
   return (
@@ -50,6 +52,7 @@ export function TextareaField({
             <Textarea
               placeholder={placeholder || label}
               rows={rows}
+              disabled={disabled}
               {...ensureFieldValue(field, "")}
             />
           </FormControl>

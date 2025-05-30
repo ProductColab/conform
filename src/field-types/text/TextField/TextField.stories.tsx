@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, within } from "@storybook/test";
 import { TextField } from "./TextField";
 import {
@@ -12,6 +12,7 @@ import {
   getFormInput,
 } from "@/lib/storybook-utils";
 import { FieldPresets } from "@/utils/field-presets";
+import { extractMetadata } from "@/utils";
 
 const meta: Meta<typeof TextField> = {
   ...createFieldMeta("text/TextField", TextField),
@@ -39,7 +40,8 @@ export const Required: Story = {
     label: "Email Address",
     name: "email",
     required: true,
-    metadata: FieldPresets.email,
+    property: FieldPresets.email,
+    metadata: extractMetadata(FieldPresets.email),
   }),
   play: playFunctions.requiredField(
     "Email Address",
@@ -77,7 +79,8 @@ export const WithPrefix: Story = {
   args: createStoryArgs({
     label: "Price",
     name: "price",
-    metadata: FieldPresets.currency,
+    property: FieldPresets.currency,
+    metadata: extractMetadata(FieldPresets.currency),
   }),
   play: playFunctions.fieldWithPrefix("Price", "$", "99.99"),
 };
@@ -89,7 +92,8 @@ export const WithSuffix: Story = {
   args: createStoryArgs({
     label: "Completion Rate",
     name: "completionRate",
-    metadata: FieldPresets.percentage,
+    property: FieldPresets.percentage,
+    metadata: extractMetadata(FieldPresets.percentage),
   }),
   play: playFunctions.fieldWithSuffix("Completion Rate", "%", "85.5"),
 };
@@ -130,12 +134,9 @@ export const Password: Story = {
     label: "Password",
     name: "password",
     required: true,
-    metadata: FieldPresets.password,
+    property: FieldPresets.password,
+    metadata: extractMetadata(FieldPresets.password),
     description: "Must be at least 8 characters long",
-    property: {
-      type: "string",
-      minLength: 8,
-    },
   }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -162,7 +163,11 @@ export const SecretToken: Story = {
   args: createStoryArgs({
     label: "API Secret",
     name: "apiSecret",
-    metadata: FieldPresets.secretToken,
+    property: mockSchemas.string,
+    metadata: {
+      inputType: "password",
+      placeholder: "sk-1234567890abcdef",
+    },
     description: "Your private API secret key",
   }),
   play: playFunctions.fieldWithDescription(
@@ -180,8 +185,8 @@ export const Email: Story = {
     label: "Email Address",
     name: "email",
     required: true,
-    metadata: FieldPresets.email,
-    property: mockSchemas.stringWithPattern,
+    property: FieldPresets.email,
+    metadata: extractMetadata(FieldPresets.email),
   }),
   play: playFunctions.inputTypeTest(
     "Email Address",
@@ -197,7 +202,8 @@ export const Phone: Story = {
   args: createStoryArgs({
     label: "Phone Number",
     name: "phone",
-    metadata: FieldPresets.phone,
+    property: FieldPresets.phone,
+    metadata: extractMetadata(FieldPresets.phone),
   }),
   play: playFunctions.inputTypeTest("Phone Number", "tel", "+1 (555) 123-4567"),
 };
@@ -209,7 +215,8 @@ export const URL: Story = {
   args: createStoryArgs({
     label: "Website URL",
     name: "website",
-    metadata: FieldPresets.url,
+    property: FieldPresets.url,
+    metadata: extractMetadata(FieldPresets.url),
     description: "Enter your company website",
   }),
   play: async ({ canvasElement }) => {
@@ -395,28 +402,32 @@ export const AllInputTypes: Story = {
         {...createStoryArgs({
           label: "Email Input",
           name: "email",
-          metadata: FieldPresets.email,
+          property: FieldPresets.email,
+          metadata: extractMetadata(FieldPresets.email),
         })}
       />
       <TextField
         {...createStoryArgs({
           label: "Password Input",
           name: "password",
-          metadata: FieldPresets.password,
+          property: FieldPresets.password,
+          metadata: extractMetadata(FieldPresets.password),
         })}
       />
       <TextField
         {...createStoryArgs({
           label: "URL Input",
           name: "url",
-          metadata: FieldPresets.url,
+          property: FieldPresets.url,
+          metadata: extractMetadata(FieldPresets.url),
         })}
       />
       <TextField
         {...createStoryArgs({
           label: "Phone Input",
           name: "phone",
-          metadata: FieldPresets.phone,
+          property: FieldPresets.phone,
+          metadata: extractMetadata(FieldPresets.phone),
         })}
       />
       <TextField

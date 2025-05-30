@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { z } from "zod/v4";
 import { expect, userEvent, within } from "@storybook/test";
 import { RuleBasedSchemaForm } from "./RuleBasedSchemaForm";
@@ -65,14 +65,6 @@ const meta: Meta<typeof RuleBasedSchemaForm> = {
     rules: {
       control: { type: "object" },
       description: "Array of rule definitions that control form behavior",
-    },
-    enableTransitions: {
-      control: { type: "boolean" },
-      description: "Enable smooth animations when fields appear/disappear",
-    },
-    transitionDuration: {
-      control: { type: "number", min: 100, max: 1000 },
-      description: "Animation duration in milliseconds",
     },
   },
 };
@@ -277,8 +269,6 @@ export const ComplexRulesDemo: Story = {
       contactPreference: "email",
       annualIncome: 50000,
     },
-    enableTransitions: true,
-    transitionDuration: 300,
   },
   decorators: [
     ruleFormUtils.withRuleFormProvider({
@@ -353,15 +343,21 @@ export const WithCustomFunctions: Story = {
       {
         id: "weekend-special",
         condition: {
-          type: "function",
-          name: "isWeekend",
-          args: [],
-        } as any,
-        action: {
-          type: "field-visibility",
-          field: "spouseName",
-          visible: true,
+          field: "isWeekend",
+          operator: "equals",
+          value: {
+            type: "function",
+            name: "isWeekend",
+            args: [],
+          },
         },
+        actions: [
+          {
+            type: "show",
+            target: "spouseName",
+          },
+        ],
+        enabled: true,
       },
     ],
     fieldLabels,
@@ -397,10 +393,15 @@ export const WithCustomFunctions: Story = {
   ],
 };
 
-// Story with debug inspector
-export const WithDebugInspector: Story = {
+// Story with debug logging
+export const WithDebugLogging: Story = {
   args: {
     ...ComplexRulesDemo.args,
+    onRuleEvaluation: (ruleResults) => {
+      ruleDebugUtils.logRuleEvaluation(ComplexRulesDemo.args?.rules || [], {
+        formData: ruleResults.form.getValues(),
+      });
+    },
   },
   decorators: [
     ruleFormUtils.withRuleFormProvider({
@@ -411,20 +412,6 @@ export const WithDebugInspector: Story = {
       contactPreference: "email",
       annualIncome: 50000,
     }),
-    (Story) => (
-      <div className="relative">
-        <Story />
-        <ruleDebugUtils.RuleInspector
-          rules={ComplexRulesDemo.args?.rules || []}
-          context={{
-            formData: {
-              maritalStatus: "single",
-              annualIncome: 50000,
-            },
-          }}
-        />
-      </div>
-    ),
   ],
 };
 

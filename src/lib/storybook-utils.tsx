@@ -1,10 +1,11 @@
 "use client";
-import type { Meta } from "@storybook/react";
+import type { Meta } from "@storybook/react-vite";
 import { FormProvider, useForm } from "react-hook-form";
 import { z } from "zod/v4";
 import type { FieldMetadata } from "@/schemas/field.schema";
 import { FieldPresets } from "@/utils/field-presets";
 import { expect, userEvent, within } from "@storybook/test";
+import type { Rule, RuleContext } from "@/schemas/rule.schema";
 
 /**
  * React Hook Form decorator for Storybook
@@ -12,7 +13,7 @@ import { expect, userEvent, within } from "@storybook/test";
  */
 export const withFormProvider =
   (defaultValues = {}) =>
-  (Story: any) => {
+  (Story: React.ComponentType) => {
     const methods = useForm({
       defaultValues,
       mode: "onChange",
@@ -52,8 +53,6 @@ export const mockMetadata = {
   url: FieldPresets.url,
   currency: FieldPresets.currency,
   percentage: FieldPresets.percentage,
-  secretToken: FieldPresets.secretToken,
-  apiKey: FieldPresets.apiKey,
 };
 
 /**
@@ -138,7 +137,7 @@ export function createFieldMeta<T>(title: string, component: T): Meta<T> {
 /**
  * Generate story args for consistent testing
  */
-export function createStoryArgs(overrides: any = {}) {
+export function createStoryArgs(overrides: Record<string, unknown> = {}) {
   const args = {
     name: "testField",
     label: "Test Field",
@@ -163,7 +162,11 @@ export function createStoryArgs(overrides: any = {}) {
  * Helper to get form input that works with React Hook Form structure
  * where labels point to wrapper divs instead of inputs directly
  */
-export const getFormInput = (canvas: any, label: string, required = false) => {
+export const getFormInput = (
+  canvas: ReturnType<typeof within>,
+  label: string,
+  required = false
+) => {
   const expectedLabel = required ? `${label} *` : label;
 
   // Try direct label association first
@@ -242,10 +245,12 @@ export const getFormInput = (canvas: any, label: string, required = false) => {
       throw new Error(
         `Could not find any input elements for label: ${expectedLabel}`
       );
-    } catch (fallbackError: any) {
-      throw new Error(
-        `Could not find input for label: ${expectedLabel}. Original error: ${fallbackError.message}`
-      );
+    } catch (fallbackError: unknown) {
+      if (fallbackError instanceof Error) {
+        throw new Error(
+          `Could not find input for label: ${expectedLabel}. Original error: ${fallbackError.message}`
+        );
+      }
     }
   }
 };
@@ -261,7 +266,11 @@ export const fieldAssertions = {
   /**
    * Assert that a field has a proper label with optional required indicator
    */
-  hasLabel: (canvas: any, label: string, required = false) => {
+  hasLabel: (
+    canvas: ReturnType<typeof within>,
+    label: string,
+    required = false
+  ) => {
     const expectedLabel = required ? `${label} *` : label;
     const labelElement = canvas.getByText(expectedLabel);
     expect(labelElement).toBeInTheDocument();
@@ -273,7 +282,7 @@ export const fieldAssertions = {
    * Assert that a field has the correct input type
    */
   hasInputType: (
-    canvas: any,
+    canvas: ReturnType<typeof within>,
     label: string,
     inputType: string,
     required = false
@@ -286,14 +295,14 @@ export const fieldAssertions = {
   /**
    * Assert that a field has the correct placeholder
    */
-  hasPlaceholder: (input: any, placeholder: string) => {
+  hasPlaceholder: (input: HTMLElement, placeholder: string) => {
     expect(input).toHaveAttribute("placeholder", placeholder);
   },
 
   /**
    * Assert that a prefix is displayed correctly
    */
-  hasPrefix: (canvas: any, prefix: string) => {
+  hasPrefix: (canvas: ReturnType<typeof within>, prefix: string) => {
     const prefixElement = canvas.getByText(prefix);
     expect(prefixElement).toBeInTheDocument();
     expect(prefixElement).toHaveClass("absolute", "left-3");
@@ -303,7 +312,7 @@ export const fieldAssertions = {
   /**
    * Assert that a suffix is displayed correctly
    */
-  hasSuffix: (canvas: any, suffix: string) => {
+  hasSuffix: (canvas: ReturnType<typeof within>, suffix: string) => {
     const suffixElement = canvas.getByText(suffix);
     expect(suffixElement).toBeInTheDocument();
     expect(suffixElement).toHaveClass("absolute", "right-3");
@@ -313,7 +322,7 @@ export const fieldAssertions = {
   /**
    * Assert that a description is displayed correctly
    */
-  hasDescription: (canvas: any, description: string) => {
+  hasDescription: (canvas: ReturnType<typeof within>, description: string) => {
     const descElement = canvas.getByText(description);
     expect(descElement).toBeInTheDocument();
     expect(descElement).toHaveClass("text-xs", "text-blue-600");
@@ -323,7 +332,11 @@ export const fieldAssertions = {
   /**
    * Assert that input has correct padding for prefix/suffix
    */
-  hasCorrectPadding: (input: any, hasPrefix: boolean, hasSuffix: boolean) => {
+  hasCorrectPadding: (
+    input: HTMLElement,
+    hasPrefix: boolean,
+    hasSuffix: boolean
+  ) => {
     // Based on StringField implementation: prefix ? "pl-8" : suffix ? "pr-16" : ""
     // This means prefix takes precedence, so if both exist, only pl-8 is applied
     if (hasPrefix) {
@@ -341,7 +354,7 @@ export const fieldInteractions = {
   /**
    * Type text into a field and verify the value
    */
-  typeAndVerify: async (input: any, text: string) => {
+  typeAndVerify: async (input: HTMLElement, text: string) => {
     await userEvent.type(input, text);
 
     // Handle numeric inputs where value becomes a number
@@ -357,7 +370,7 @@ export const fieldInteractions = {
   /**
    * Clear a field and verify it's empty
    */
-  clearAndVerify: async (input: any) => {
+  clearAndVerify: async (input: HTMLElement) => {
     // Select all text and delete instead of clearing entire form
     await userEvent.click(input);
     await userEvent.keyboard("{Control>}a{/Control}");
@@ -368,7 +381,7 @@ export const fieldInteractions = {
   /**
    * Test focus and blur behavior
    */
-  testFocusBlur: async (input: any) => {
+  testFocusBlur: async (input: HTMLElement) => {
     // Initially not focused
     expect(input).not.toHaveFocus();
 
@@ -384,7 +397,7 @@ export const fieldInteractions = {
   /**
    * Test keyboard navigation
    */
-  testKeyboardNav: async (input: any, testText = "keyboard test") => {
+  testKeyboardNav: async (input: HTMLElement, testText = "keyboard test") => {
     // Focus the input first
     await userEvent.click(input);
     expect(input).toHaveFocus();
@@ -401,7 +414,7 @@ export const a11yTests = {
   /**
    * Basic accessibility assertions for any field
    */
-  basicA11y: async (canvas: any, label: string) => {
+  basicA11y: async (canvas: ReturnType<typeof within>, label: string) => {
     let input;
 
     try {
@@ -435,7 +448,7 @@ export const playFunctions = {
    */
   basicField:
     (label: string, testValue: string, inputType = "text") =>
-    async ({ canvasElement }: any) => {
+    async ({ canvasElement }: { canvasElement: HTMLElement }) => {
       const canvas = within(canvasElement);
       const input = fieldAssertions.hasInputType(canvas, label, inputType);
 
@@ -447,7 +460,7 @@ export const playFunctions = {
    */
   requiredField:
     (label: string, testValue: string, inputType = "email") =>
-    async ({ canvasElement }: any) => {
+    async ({ canvasElement }: { canvasElement: HTMLElement }) => {
       const canvas = within(canvasElement);
       fieldAssertions.hasLabel(canvas, label, true);
       const input = fieldAssertions.hasInputType(
@@ -465,7 +478,7 @@ export const playFunctions = {
    */
   fieldWithDescription:
     (label: string, description: string, testValue: string) =>
-    async ({ canvasElement }: any) => {
+    async ({ canvasElement }: { canvasElement: HTMLElement }) => {
       const canvas = within(canvasElement);
       fieldAssertions.hasDescription(canvas, description);
       const input = getFormInput(canvas, label);
@@ -478,7 +491,7 @@ export const playFunctions = {
    */
   fieldWithPrefix:
     (label: string, prefix: string, testValue: string) =>
-    async ({ canvasElement }: any) => {
+    async ({ canvasElement }: { canvasElement: HTMLElement }) => {
       const canvas = within(canvasElement);
       fieldAssertions.hasPrefix(canvas, prefix);
       const input = getFormInput(canvas, label);
@@ -492,7 +505,7 @@ export const playFunctions = {
    */
   fieldWithSuffix:
     (label: string, suffix: string, testValue: string) =>
-    async ({ canvasElement }: any) => {
+    async ({ canvasElement }: { canvasElement: HTMLElement }) => {
       const canvas = within(canvasElement);
       fieldAssertions.hasSuffix(canvas, suffix);
       const input = getFormInput(canvas, label);
@@ -506,7 +519,7 @@ export const playFunctions = {
    */
   fullInteractionTest:
     (label: string, testValue: string, placeholder?: string) =>
-    async ({ canvasElement }: any) => {
+    async ({ canvasElement }: { canvasElement: HTMLElement }) => {
       const canvas = within(canvasElement);
       const input = getFormInput(canvas, label);
 
@@ -525,7 +538,7 @@ export const playFunctions = {
    */
   accessibilityTest:
     (label: string, required = false) =>
-    async ({ canvasElement }: any) => {
+    async ({ canvasElement }: { canvasElement: HTMLElement }) => {
       const canvas = within(canvasElement);
       await a11yTests.basicA11y(canvas, label);
 
@@ -538,7 +551,7 @@ export const playFunctions = {
    */
   inputTypeTest:
     (label: string, inputType: string, testValue: string, required = false) =>
-    async ({ canvasElement }: any) => {
+    async ({ canvasElement }: { canvasElement: HTMLElement }) => {
       const canvas = within(canvasElement);
       const input = fieldAssertions.hasInputType(
         canvas,
@@ -559,7 +572,7 @@ export const ruleFormUtils = {
    */
   withRuleFormProvider:
     (defaultValues = {}, rules = [], context = {}) =>
-    (Story: any) => {
+    (Story: React.ComponentType) => {
       const methods = useForm({
         defaultValues,
         mode: "onChange",
@@ -786,13 +799,56 @@ export const ruleFormUtils = {
       return typeof value === "string" ? value.trim() : value;
     },
   },
+
+  /**
+   * Create a visual rule inspector component
+   */
+  RuleInspector: ({
+    rules,
+    context,
+  }: {
+    rules: Rule[];
+    context: RuleContext;
+  }) => (
+    <div className="fixed bottom-4 right-4 w-80 max-h-96 overflow-auto bg-white border border-gray-300 rounded-lg shadow-lg p-3 text-xs">
+      <h3 className="font-bold mb-2">🔍 Rule Inspector</h3>
+      <div className="mb-2">
+        <strong>Context:</strong>
+        <pre className="bg-gray-100 p-1 rounded mt-1 overflow-x-auto">
+          {JSON.stringify(context, null, 2)}
+        </pre>
+      </div>
+      <div>
+        <strong>Rules ({rules.length}):</strong>
+        {rules.map((rule, i) => (
+          <div key={i} className="mt-1 p-1 border border-gray-200 rounded">
+            <div className="font-semibold">{rule.id}</div>
+            <div className="text-gray-600">
+              {"field" in rule.condition
+                ? `${rule.condition.field} ${rule.condition.operator} ${JSON.stringify(rule.condition.value)}`
+                : `Complex condition: ${rule.condition.operator} (${rule.condition.conditions.length} conditions)`}
+            </div>
+            <div className="text-blue-600">
+              →{" "}
+              {rule.actions
+                .map(
+                  (action) =>
+                    `${action.type}: ${action.target || "current field"}`
+                )
+                .join(", ")}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  ),
 };
 
 /**
  * Helper to interact with Radix UI Select components
  */
 const interactWithRadixSelect = async (
-  canvas: any,
+  canvas: ReturnType<typeof within>,
   triggerValue: string,
   fieldName?: string
 ) => {
@@ -807,7 +863,7 @@ const interactWithRadixSelect = async (
     } catch {
       // If that doesn't work, find all comboboxes and filter by surrounding label
       const comboboxes = canvas.getAllByRole("combobox");
-      selectTrigger = comboboxes.find((box: any) => {
+      selectTrigger = comboboxes.find((box: HTMLElement) => {
         const parent = box.closest(
           "[data-field], .field-container, .form-field"
         );
@@ -874,7 +930,7 @@ export const rulePlayFunctions = {
    */
   testFieldVisibility:
     (triggerField: string, triggerValue: string, targetField: string) =>
-    async ({ canvasElement }: any) => {
+    async ({ canvasElement }: { canvasElement: HTMLElement }) => {
       const canvas = within(canvasElement);
 
       // Handle Radix UI Select components
@@ -917,7 +973,7 @@ export const rulePlayFunctions = {
    */
   testConditionalRequired:
     (triggerField: string, triggerValue: string, targetField: string) =>
-    async ({ canvasElement }: any) => {
+    async ({ canvasElement }: { canvasElement: HTMLElement }) => {
       const canvas = within(canvasElement);
 
       // Handle Radix UI Select components
@@ -969,7 +1025,7 @@ export const rulePlayFunctions = {
         expectedRequired: string[];
       }>
     ) =>
-    async ({ canvasElement }: any) => {
+    async ({ canvasElement }: { canvasElement: HTMLElement }) => {
       const canvas = within(canvasElement);
 
       for (const scenario of scenarios) {
@@ -1013,7 +1069,7 @@ export const rulePlayFunctions = {
    */
   testRulePerformance:
     (numChanges: number = 10) =>
-    async ({ canvasElement }: any) => {
+    async ({ canvasElement }: { canvasElement: HTMLElement }) => {
       const canvas = within(canvasElement);
 
       const startTime = performance.now();
@@ -1049,7 +1105,7 @@ export const ruleDebugUtils = {
   /**
    * Log rule evaluation results
    */
-  logRuleEvaluation: (rules: any[], context: any) => {
+  logRuleEvaluation: (rules: Rule[], context: RuleContext) => {
     console.group("🔍 Rule Evaluation Debug");
     console.log("Context:", context);
     console.log("Rules:", rules);
@@ -1058,34 +1114,4 @@ export const ruleDebugUtils = {
     });
     console.groupEnd();
   },
-
-  /**
-   * Create a visual rule inspector component
-   */
-  RuleInspector: ({ rules, context }: { rules: any[]; context: any }) => (
-    <div className="fixed bottom-4 right-4 w-80 max-h-96 overflow-auto bg-white border border-gray-300 rounded-lg shadow-lg p-3 text-xs">
-      <h3 className="font-bold mb-2">🔍 Rule Inspector</h3>
-      <div className="mb-2">
-        <strong>Context:</strong>
-        <pre className="bg-gray-100 p-1 rounded mt-1 overflow-x-auto">
-          {JSON.stringify(context, null, 2)}
-        </pre>
-      </div>
-      <div>
-        <strong>Rules ({rules.length}):</strong>
-        {rules.map((rule, i) => (
-          <div key={i} className="mt-1 p-1 border border-gray-200 rounded">
-            <div className="font-semibold">{rule.id}</div>
-            <div className="text-gray-600">
-              {rule.condition.field} {rule.condition.operator}{" "}
-              {JSON.stringify(rule.condition.value)}
-            </div>
-            <div className="text-blue-600">
-              → {rule.action.type}: {rule.action.field}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  ),
 };

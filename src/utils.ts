@@ -1,5 +1,6 @@
 import { z } from "zod/v4";
 import type { FieldMetadata } from "./schemas/field.schema";
+import { FieldRegistry } from "./field-registry";
 
 /**
  * Helper function to create strongly-typed field metadata
@@ -16,18 +17,34 @@ export function hasMetadata(
 }
 
 /**
- * Safely extract metadata from a Zod schema
+ * Extract metadata from a Zod schema or JSON Schema object
+ * For Zod schemas: checks the FieldRegistry first
+ * For JSON Schema objects: checks the manual metadata property
  */
 export function extractMetadata(
-  schema: z.core.JSONSchema.Schema
+  schema: z.ZodTypeAny | z.core.JSONSchema.Schema
 ): FieldMetadata {
-  if (
-    hasMetadata(schema) &&
-    schema.metadata &&
-    typeof schema.metadata === "object"
-  ) {
-    return schema.metadata as FieldMetadata;
+  // If this is a Zod schema, check the registry first
+  if (schema && typeof schema === "object" && "_def" in schema) {
+    const zodSchema = schema as z.ZodTypeAny;
+    if (FieldRegistry.has(zodSchema)) {
+      const registryMetadata = FieldRegistry.get(zodSchema);
+      if (registryMetadata) {
+        return registryMetadata;
+      }
+    }
   }
+
+  // Fall back to manual metadata property for JSON Schema objects
+  const jsonSchema = schema as z.core.JSONSchema.Schema;
+  if (
+    hasMetadata(jsonSchema) &&
+    jsonSchema.metadata &&
+    typeof jsonSchema.metadata === "object"
+  ) {
+    return jsonSchema.metadata as FieldMetadata;
+  }
+
   return {};
 }
 
@@ -238,7 +255,7 @@ export function getNumericStep(metadata: FieldMetadata): number {
  * Get number of rows for textarea
  */
 export function getTextareaRows(metadata: FieldMetadata): number {
-  if (metadata.rows !== undefined) {
+  if (metadata?.rows !== undefined) {
     return metadata.rows;
   }
   return 3; // Default rows
@@ -298,7 +315,9 @@ export function getDefaultValuesFromSchema(schema: z.ZodType) {
  * Get default values from JSON Schema objects (not Zod schemas)
  * This is useful for components working with raw JSON Schema like ListField
  */
-export function getDefaultValuesFromJSONSchema(schema: any): any {
+export function getDefaultValuesFromJSONSchema(
+  schema: z.core.JSONSchema.BaseSchema
+): unknown {
   if (!schema || typeof schema !== "object") {
     return null;
   }
@@ -317,7 +336,7 @@ export function getDefaultValuesFromJSONSchema(schema: any): any {
       return schema.default !== undefined ? schema.default : [];
     case "object":
       if (schema.properties) {
-        const defaultObj: Record<string, any> = {};
+        const defaultObj: Record<string, unknown> = {};
         Object.entries(schema.properties).forEach(([key, fieldSchema]) => {
           defaultObj[key] = getDefaultValuesFromJSONSchema(fieldSchema);
         });

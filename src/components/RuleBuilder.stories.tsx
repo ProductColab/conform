@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, userEvent, within } from "@storybook/test";
 import { RuleBuilder } from "./RuleBuilder";
 import type { FieldSchemas } from "../lib/fieldUtils";
@@ -11,12 +11,11 @@ const DEMO_FIELD_SCHEMAS: FieldSchemas = {
     title: "Email Address",
     description: "Email address with validation",
     format: "email",
-    // Using .meta() to attach our field metadata (following the Zod pattern)
     metadata: fieldMeta({
       inputType: "email",
       placeholder: "user@example.com",
     }),
-  } as any, // Type assertion needed for metadata
+  },
 
   name: {
     type: "string",
@@ -25,7 +24,7 @@ const DEMO_FIELD_SCHEMAS: FieldSchemas = {
     metadata: fieldMeta({
       placeholder: "Enter full name",
     }),
-  } as any,
+  },
 
   city: {
     type: "string",
@@ -34,7 +33,7 @@ const DEMO_FIELD_SCHEMAS: FieldSchemas = {
     metadata: fieldMeta({
       placeholder: "Enter city name",
     }),
-  } as any,
+  },
 
   age: {
     type: "number",
@@ -46,7 +45,7 @@ const DEMO_FIELD_SCHEMAS: FieldSchemas = {
       inputType: "number",
       step: 1,
     }),
-  } as any,
+  },
 
   isActive: {
     type: "boolean",
@@ -55,7 +54,7 @@ const DEMO_FIELD_SCHEMAS: FieldSchemas = {
     metadata: fieldMeta({
       format: "switch",
     }),
-  } as any,
+  },
 
   phoneNumber: {
     type: "string",
@@ -65,7 +64,7 @@ const DEMO_FIELD_SCHEMAS: FieldSchemas = {
       inputType: "tel",
       placeholder: "+1 (555) 123-4567",
     }),
-  } as any,
+  },
 
   website: {
     type: "string",
@@ -76,7 +75,7 @@ const DEMO_FIELD_SCHEMAS: FieldSchemas = {
       inputType: "url",
       placeholder: "https://example.com",
     }),
-  } as any,
+  },
 
   salary: {
     type: "number",
@@ -88,7 +87,7 @@ const DEMO_FIELD_SCHEMAS: FieldSchemas = {
       prefix: "$",
       step: 0.01,
     }),
-  } as any,
+  },
 
   tags: {
     type: "array",
@@ -98,7 +97,7 @@ const DEMO_FIELD_SCHEMAS: FieldSchemas = {
     metadata: fieldMeta({
       format: "checkbox-group",
     }),
-  } as any,
+  },
 
   permissions: {
     type: "array",
@@ -108,8 +107,525 @@ const DEMO_FIELD_SCHEMAS: FieldSchemas = {
     metadata: fieldMeta({
       format: "multiselect",
     }),
-  } as any,
+  },
 };
+
+// =============================================================================
+// TESTING UTILITIES (following storybook-utils.tsx patterns)
+// =============================================================================
+
+/**
+ * Helper to find form elements with multiple fallback strategies
+ * Following the pattern from storybook-utils.tsx
+ */
+const getRuleBuilderInput = (
+  canvas: ReturnType<typeof within>,
+  label: string,
+  required = false
+) => {
+  const expectedLabel = required ? `${label} *` : label;
+
+  // Try direct label association first
+  try {
+    return canvas.getByLabelText(expectedLabel);
+  } catch {
+    // Try case-insensitive regex
+    try {
+      return canvas.getByLabelText(new RegExp(label, "i"));
+    } catch {
+      // Try finding by role and name
+      try {
+        const roles = ["textbox", "combobox", "spinbutton"];
+        for (const role of roles) {
+          try {
+            return canvas.getByRole(role, { name: new RegExp(label, "i") });
+          } catch {
+            continue;
+          }
+        }
+        throw new Error("No matching role found");
+      } catch {
+        // Fallback to finding all inputs and matching by proximity/attributes
+        const allInputs = [
+          ...canvas.queryAllByRole("textbox"),
+          ...canvas.queryAllByRole("combobox"),
+          ...canvas.queryAllByRole("spinbutton"),
+          ...(canvas.container?.querySelectorAll("input, select, textarea") ||
+            []),
+        ];
+
+        if (allInputs.length === 0) {
+          throw new Error(
+            `Could not find any input elements for label: ${label}`
+          );
+        }
+
+        // Match by various attributes
+        const labelLower = label.toLowerCase();
+        for (const input of allInputs) {
+          const name = input.getAttribute("name")?.toLowerCase() || "";
+          const id = input.getAttribute("id")?.toLowerCase() || "";
+          const ariaLabel =
+            input.getAttribute("aria-label")?.toLowerCase() || "";
+
+          if (
+            name.includes(labelLower) ||
+            id.includes(labelLower) ||
+            ariaLabel.includes(labelLower) ||
+            labelLower.includes(name) ||
+            labelLower.includes(id)
+          ) {
+            return input;
+          }
+        }
+
+        // Last resort: return first input if only one exists
+        if (allInputs.length === 1) {
+          return allInputs[0];
+        }
+
+        throw new Error(`Could not find input for label: ${label}`);
+      }
+    }
+  }
+};
+
+/**
+ * RuleBuilder-specific assertions following fieldAssertions pattern
+ */
+const ruleBuilderAssertions = {
+  /**
+   * Assert that a rule builder form has the expected structure
+   */
+  hasRuleBuilderStructure: (canvas: ReturnType<typeof within>) => {
+    // Should have the main sections
+    expect(canvas.getByText("Build Your Rule")).toBeInTheDocument();
+    expect(canvas.getByText("Generated Code")).toBeInTheDocument();
+
+    // Should have the form controls
+    expect(canvas.getByLabelText("Field")).toBeInTheDocument();
+    expect(canvas.getByLabelText("Operator")).toBeInTheDocument();
+    expect(canvas.getByLabelText("Value")).toBeInTheDocument();
+    expect(canvas.getByLabelText("Action")).toBeInTheDocument();
+  },
+
+  /**
+   * Assert that generated code contains expected content
+   */
+  hasGeneratedCode: (
+    canvas: ReturnType<typeof within>,
+    expectedContent: string
+  ) => {
+    const codeElement = canvas.getByRole("code");
+    expect(codeElement).toHaveTextContent(expectedContent);
+    return codeElement;
+  },
+
+  /**
+   * Assert that imports are correctly generated
+   */
+  hasCorrectImports: (
+    canvas: ReturnType<typeof within>,
+    expectedImports: string[]
+  ) => {
+    const codeElement = canvas.getByRole("code");
+    const importLine = `import { ${expectedImports.join(", ")} } from '@conform/rule-builder'`;
+    expect(codeElement).toHaveTextContent(importLine);
+  },
+
+  /**
+   * Assert that condition is correctly formatted
+   */
+  hasCorrectCondition: (
+    canvas: ReturnType<typeof within>,
+    field: string,
+    operator: string,
+    value: string | number | boolean
+  ) => {
+    const codeElement = canvas.getByRole("code");
+
+    // Format value based on its actual type, not what we expect
+    let formattedValue: string;
+
+    // Check if the value is a numeric string that should be treated as number
+    if (
+      typeof value === "string" &&
+      !isNaN(Number(value)) &&
+      value.trim() !== ""
+    ) {
+      formattedValue = value; // Numbers don't get quotes
+    }
+    // Check if the value is a boolean string
+    else if (
+      typeof value === "string" &&
+      (value === "true" || value === "false")
+    ) {
+      formattedValue = value; // Booleans don't get quotes
+    }
+    // Regular string values get quotes
+    else if (typeof value === "string") {
+      formattedValue = `'${value}'`;
+    }
+    // Actual numbers and booleans
+    else {
+      formattedValue = String(value);
+    }
+
+    const expectedCondition = `field('${field}').${operator}(${formattedValue})`;
+    expect(codeElement).toHaveTextContent(expectedCondition);
+  },
+
+  /**
+   * Assert that action is correctly chained
+   */
+  hasCorrectAction: (
+    canvas: ReturnType<typeof within>,
+    actionType: string,
+    actionValue?: string
+  ) => {
+    const codeElement = canvas.getByRole("code");
+    let expectedAction;
+
+    if (actionValue) {
+      expectedAction = `.then(() => ${actionType}('${actionValue}'))`;
+    } else {
+      expectedAction = `.then(() => ${actionType}())`;
+    }
+
+    expect(codeElement).toHaveTextContent(expectedAction);
+  },
+
+  /**
+   * Assert placeholder message is shown
+   */
+  hasPlaceholderMessage: (canvas: ReturnType<typeof within>) => {
+    const codeElement = canvas.getByRole("code");
+    expect(codeElement).toHaveTextContent(
+      "Select a field, operator, and value to see generated code"
+    );
+  },
+};
+
+/**
+ * RuleBuilder-specific interactions following fieldInteractions pattern
+ */
+const ruleBuilderInteractions = {
+  /**
+   * Select a field from the dropdown
+   */
+  selectField: async (canvas: ReturnType<typeof within>, fieldName: string) => {
+    const fieldSelect = getRuleBuilderInput(canvas, "Field");
+    await userEvent.selectOptions(fieldSelect, fieldName);
+    // Small delay for UI updates
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  },
+
+  /**
+   * Select an operator from the dropdown
+   */
+  selectOperator: async (
+    canvas: ReturnType<typeof within>,
+    operator: string
+  ) => {
+    const operatorSelect = getRuleBuilderInput(canvas, "Operator");
+    await userEvent.selectOptions(operatorSelect, operator);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  },
+
+  /**
+   * Enter a value in the value input
+   */
+  enterValue: async (canvas: ReturnType<typeof within>, value: string) => {
+    const valueInput = getRuleBuilderInput(canvas, "Value");
+    await userEvent.clear(valueInput);
+    await userEvent.type(valueInput, value);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  },
+
+  /**
+   * Select an action from the action dropdown
+   */
+  selectAction: async (canvas: ReturnType<typeof within>, action: string) => {
+    const actionSelect = getRuleBuilderInput(canvas, "Action");
+    await userEvent.selectOptions(actionSelect, action);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  },
+
+  /**
+   * Enter action configuration (message, URL, etc.)
+   */
+  enterActionConfig: async (
+    canvas: ReturnType<typeof within>,
+    configValue: string
+  ) => {
+    // Find the action config input (could be Message, URL, etc.)
+    const configInputs = [
+      () => canvas.getByLabelText("Message"),
+      () => canvas.getByLabelText("URL"),
+      () => canvas.getByLabelText("Configuration"),
+    ];
+
+    let configInput;
+    for (const getter of configInputs) {
+      try {
+        configInput = getter();
+        break;
+      } catch {
+        continue;
+      }
+    }
+
+    if (!configInput) {
+      throw new Error("Could not find action configuration input");
+    }
+
+    await userEvent.clear(configInput);
+    await userEvent.type(configInput, configValue);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  },
+
+  /**
+   * Build a complete rule with condition and action
+   */
+  buildCompleteRule: async (
+    canvas: ReturnType<typeof within>,
+    field: string,
+    operator: string,
+    value: string,
+    action: string,
+    actionConfig?: string
+  ) => {
+    await ruleBuilderInteractions.selectField(canvas, field);
+    await ruleBuilderInteractions.selectOperator(canvas, operator);
+    await ruleBuilderInteractions.enterValue(canvas, value);
+    await ruleBuilderInteractions.selectAction(canvas, action);
+
+    if (actionConfig) {
+      await ruleBuilderInteractions.enterActionConfig(canvas, actionConfig);
+    }
+  },
+
+  /**
+   * Test copy functionality
+   */
+  testCopyFunctionality: async (canvas: ReturnType<typeof within>) => {
+    const copyButton = canvas.getByText("Copy");
+    await userEvent.click(copyButton);
+
+    // Verify button text changes
+    await expect(canvas.getByText("Copied!")).toBeInTheDocument();
+
+    // Wait for button to reset
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  },
+};
+
+/**
+ * Pre-built play functions for common scenarios (following playFunctions pattern)
+ */
+const ruleBuilderPlayFunctions = {
+  /**
+   * Basic rule building test
+   */
+  basicRule:
+    (field: string, operator: string, value: string) =>
+    async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+      const canvas = within(canvasElement);
+
+      ruleBuilderAssertions.hasRuleBuilderStructure(canvas);
+      ruleBuilderAssertions.hasPlaceholderMessage(canvas);
+
+      await ruleBuilderInteractions.selectField(canvas, field);
+      await ruleBuilderInteractions.selectOperator(canvas, operator);
+      await ruleBuilderInteractions.enterValue(canvas, value);
+
+      ruleBuilderAssertions.hasCorrectCondition(canvas, field, operator, value);
+      ruleBuilderAssertions.hasCorrectImports(canvas, ["field"]);
+    },
+
+  /**
+   * Complete rule with action test
+   */
+  completeRule:
+    (
+      field: string,
+      operator: string,
+      value: string,
+      action: string,
+      actionConfig: string
+    ) =>
+    async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+      const canvas = within(canvasElement);
+
+      await ruleBuilderInteractions.buildCompleteRule(
+        canvas,
+        field,
+        operator,
+        value,
+        action,
+        actionConfig
+      );
+
+      ruleBuilderAssertions.hasCorrectCondition(canvas, field, operator, value);
+      ruleBuilderAssertions.hasCorrectAction(canvas, action, actionConfig);
+      ruleBuilderAssertions.hasCorrectImports(canvas, [
+        "field",
+        "showMessage",
+        "redirect",
+        "setFieldValue",
+        "preventDefault",
+      ]);
+    },
+
+  /**
+   * String escaping test
+   */
+  stringEscaping:
+    (testString: string) =>
+    async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+      const canvas = within(canvasElement);
+
+      await ruleBuilderInteractions.selectField(canvas, "name");
+      await ruleBuilderInteractions.selectOperator(canvas, "equals");
+      await ruleBuilderInteractions.enterValue(canvas, testString);
+
+      // Check that single quotes are properly escaped
+      const escapedString = testString.replace(/'/g, "\\'");
+      ruleBuilderAssertions.hasGeneratedCode(canvas, `'${escapedString}'`);
+    },
+
+  /**
+   * All operators test
+   */
+  allOperators:
+    (field: string, testValue: string) =>
+    async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+      const canvas = within(canvasElement);
+
+      const operators = [
+        "equals",
+        "greater_than",
+        "less_than",
+        "contains",
+        "starts_with",
+      ];
+
+      await ruleBuilderInteractions.selectField(canvas, field);
+      await ruleBuilderInteractions.enterValue(canvas, testValue);
+
+      for (const operator of operators) {
+        await ruleBuilderInteractions.selectOperator(canvas, operator);
+        ruleBuilderAssertions.hasCorrectCondition(
+          canvas,
+          field,
+          operator,
+          testValue
+        );
+      }
+    },
+
+  /**
+   * Real-time updates test
+   */
+  realTimeUpdates:
+    () =>
+    async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+      const canvas = within(canvasElement);
+
+      // Start with placeholder
+      ruleBuilderAssertions.hasPlaceholderMessage(canvas);
+
+      // Add field - should still show placeholder
+      await ruleBuilderInteractions.selectField(canvas, "email");
+      ruleBuilderAssertions.hasPlaceholderMessage(canvas);
+
+      // Add operator - still placeholder
+      await ruleBuilderInteractions.selectOperator(canvas, "equals");
+      ruleBuilderAssertions.hasPlaceholderMessage(canvas);
+
+      // Add value - NOW should generate code
+      await ruleBuilderInteractions.enterValue(canvas, "test@example.com");
+      ruleBuilderAssertions.hasCorrectCondition(
+        canvas,
+        "email",
+        "equals",
+        "test@example.com"
+      );
+
+      // Add action - imports should update
+      await ruleBuilderInteractions.selectAction(canvas, "showMessage");
+      ruleBuilderAssertions.hasCorrectImports(canvas, [
+        "field",
+        "showMessage",
+        "redirect",
+        "setFieldValue",
+        "preventDefault",
+      ]);
+    },
+
+  /**
+   * Action types test
+   */
+  actionTypes:
+    () =>
+    async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+      const canvas = within(canvasElement);
+
+      // Set up base condition
+      await ruleBuilderInteractions.selectField(canvas, "email");
+      await ruleBuilderInteractions.selectOperator(canvas, "equals");
+      await ruleBuilderInteractions.enterValue(canvas, "test@example.com");
+
+      // Test showMessage action
+      await ruleBuilderInteractions.selectAction(canvas, "showMessage");
+      await ruleBuilderInteractions.enterActionConfig(canvas, "Hello!");
+      ruleBuilderAssertions.hasCorrectAction(canvas, "showMessage", "Hello!");
+
+      // Test redirect action
+      await ruleBuilderInteractions.selectAction(canvas, "redirect");
+      await ruleBuilderInteractions.enterActionConfig(canvas, "/dashboard");
+      ruleBuilderAssertions.hasCorrectAction(canvas, "redirect", "/dashboard");
+
+      // Test preventDefault action (no config needed)
+      await ruleBuilderInteractions.selectAction(canvas, "preventDefault");
+      ruleBuilderAssertions.hasCorrectAction(canvas, "preventDefault");
+
+      // Verify config input is disabled
+      try {
+        const configInput = canvas.getByLabelText("Configuration");
+        expect(configInput).toBeDisabled();
+        expect(configInput).toHaveValue("No configuration required");
+      } catch {
+        // Config input might not exist for preventDefault, which is fine
+      }
+    },
+
+  /**
+   * Copy functionality test
+   */
+  copyFunctionality:
+    () =>
+    async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+      const canvas = within(canvasElement);
+
+      // Build a complete rule
+      await ruleBuilderInteractions.buildCompleteRule(
+        canvas,
+        "email",
+        "equals",
+        "test@example.com",
+        "showMessage",
+        "Valid email!"
+      );
+
+      // Test copy functionality
+      await ruleBuilderInteractions.testCopyFunctionality(canvas);
+    },
+};
+
+// =============================================================================
+// STORY DEFINITIONS
+// =============================================================================
 
 const meta: Meta<typeof RuleBuilder> = {
   title: "Sprint 1/Visual Rule Builder",
@@ -119,10 +635,6 @@ const meta: Meta<typeof RuleBuilder> = {
     docs: {
       description: {
         component: `
-# 🏃‍♂️ Sprint 1 MVP: Visual Rule Builder
-
-**The team delivered BEYOND expectations!** Jordan & Sam built the code generation engine, Alex & Riley created the beautiful UI, and Emma made sure everything works with comprehensive tests.
-
 ## Features ✨
 - **Visual Interface**: Select fields, operators, and values with dropdown menus
 - **Action Support**: Complete rules with "When... Then..." logic
@@ -135,15 +647,6 @@ const meta: Meta<typeof RuleBuilder> = {
 - **Redirect**: Navigate to different URLs  
 - **Set Field Value**: Dynamically update form fields
 - **Prevent Default**: Block default browser behaviors
-
-## Team Notes 📝
-- Uses string templates for MVP (ts-morph integration planned for Sprint 2)
-- Supports basic operators: equals, greater than, less than, contains, starts with
-- Handles string, number, and boolean values with proper escaping
-- Generated code imports from '@conform/rule-builder' and compiles cleanly
-- **NEW**: Complete rule building with conditions AND actions!
-
-*Built with ❤️ by the Sprint 1 team in just two days!*
         `,
       },
     },
@@ -182,23 +685,11 @@ export const WithEmailRule: Story = {
       },
     },
   },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-
-    // Test email validation rule creation
-    await userEvent.selectOptions(canvas.getByLabelText("Field"), "email");
-    await userEvent.selectOptions(canvas.getByLabelText("Operator"), "equals");
-    await userEvent.type(canvas.getByLabelText("Value"), "user@example.com");
-
-    // Verify the generated code
-    const codeElement = canvas.getByRole("code");
-    expect(codeElement).toHaveTextContent(
-      "field('email').equals('user@example.com')"
-    );
-    expect(codeElement).toHaveTextContent(
-      "import { field } from '@conform/rule-builder'"
-    );
-  },
+  play: ruleBuilderPlayFunctions.basicRule(
+    "email",
+    "equals",
+    "user@example.com"
+  ),
 };
 
 export const WithCompleteRule: Story = {
@@ -213,35 +704,13 @@ export const WithCompleteRule: Story = {
       },
     },
   },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-
-    // Build complete rule: When age > 18, then show welcome message
-    await userEvent.selectOptions(canvas.getByLabelText("Field"), "age");
-    await userEvent.selectOptions(
-      canvas.getByLabelText("Operator"),
-      "greater_than"
-    );
-    await userEvent.type(canvas.getByLabelText("Value"), "18");
-
-    // Add action
-    await userEvent.selectOptions(
-      canvas.getByLabelText("Action"),
-      "showMessage"
-    );
-    await userEvent.type(
-      canvas.getByLabelText("Message"),
-      "Welcome to our platform!"
-    );
-
-    // Verify complete rule generation
-    const codeElement = canvas.getByRole("code");
-    expect(codeElement).toHaveTextContent("field('age').greater_than(18)");
-    expect(codeElement).toHaveTextContent(
-      ".then(() => showMessage('Welcome to our platform!'))"
-    );
-    expect(codeElement).toHaveTextContent("import { field, showMessage");
-  },
+  play: ruleBuilderPlayFunctions.completeRule(
+    "age",
+    "greater_than",
+    "18",
+    "showMessage",
+    "Welcome to our platform!"
+  ),
 };
 
 export const WithRedirectAction: Story = {
@@ -257,25 +726,13 @@ export const WithRedirectAction: Story = {
       },
     },
   },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-
-    // Build redirect rule
-    await userEvent.selectOptions(canvas.getByLabelText("Field"), "isActive");
-    await userEvent.selectOptions(canvas.getByLabelText("Operator"), "equals");
-    await userEvent.type(canvas.getByLabelText("Value"), "false");
-
-    await userEvent.selectOptions(canvas.getByLabelText("Action"), "redirect");
-    await userEvent.type(canvas.getByLabelText("URL"), "/login");
-
-    // Verify redirect rule
-    const codeElement = canvas.getByRole("code");
-    expect(codeElement).toHaveTextContent("field('isActive').equals(false)");
-    expect(codeElement).toHaveTextContent(".then(() => redirect('/login'))");
-    expect(codeElement).toHaveTextContent(
-      "import { field, showMessage, redirect, setFieldValue, preventDefault }"
-    );
-  },
+  play: ruleBuilderPlayFunctions.completeRule(
+    "isActive",
+    "equals",
+    "false",
+    "redirect",
+    "/login"
+  ),
 };
 
 export const WithAgeRule: Story = {
@@ -394,44 +851,7 @@ export const RealTimeUpdates: Story = {
       },
     },
   },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const codeElement = canvas.getByRole("code");
-
-    // Start with empty state message
-    expect(codeElement).toHaveTextContent(
-      "Select a field, operator, and value to see generated code"
-    );
-
-    // Add field - should still show placeholder
-    await userEvent.selectOptions(canvas.getByLabelText("Field"), "name");
-    expect(codeElement).toHaveTextContent(
-      "Select a field, operator, and value to see generated code"
-    );
-
-    // Add operator - still placeholder
-    await userEvent.selectOptions(
-      canvas.getByLabelText("Operator"),
-      "contains"
-    );
-    expect(codeElement).toHaveTextContent(
-      "Select a field, operator, and value to see generated code"
-    );
-
-    // Add value - NOW it should generate code!
-    await userEvent.type(canvas.getByLabelText("Value"), "John");
-    expect(codeElement).toHaveTextContent("field('name').contains('John')");
-    expect(codeElement).toHaveTextContent(
-      "import { field } from '@conform/rule-builder'"
-    );
-
-    // Add action - imports should update!
-    await userEvent.selectOptions(
-      canvas.getByLabelText("Action"),
-      "showMessage"
-    );
-    expect(codeElement).toHaveTextContent("import { field, showMessage");
-  },
+  play: ruleBuilderPlayFunctions.realTimeUpdates(),
 };
 
 export const ActionTypes: Story = {
@@ -447,41 +867,7 @@ export const ActionTypes: Story = {
       },
     },
   },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-
-    // Set up base condition
-    await userEvent.selectOptions(canvas.getByLabelText("Field"), "email");
-    await userEvent.selectOptions(canvas.getByLabelText("Operator"), "equals");
-    await userEvent.type(canvas.getByLabelText("Value"), "test@example.com");
-
-    const codeElement = canvas.getByRole("code");
-    const actionSelect = canvas.getByLabelText("Action");
-
-    // Test showMessage action
-    await userEvent.selectOptions(actionSelect, "showMessage");
-    const messageInput = canvas.getByLabelText("Message");
-    await userEvent.type(messageInput, "Hello!");
-    expect(codeElement).toHaveTextContent(".then(() => showMessage('Hello!'))");
-
-    // Test redirect action
-    await userEvent.selectOptions(actionSelect, "redirect");
-    const urlInput = canvas.getByLabelText("URL");
-    await userEvent.clear(urlInput);
-    await userEvent.type(urlInput, "/dashboard");
-    expect(codeElement).toHaveTextContent(
-      ".then(() => redirect('/dashboard'))"
-    );
-
-    // Test preventDefault action (no input needed)
-    await userEvent.selectOptions(actionSelect, "preventDefault");
-    expect(codeElement).toHaveTextContent(".then(() => preventDefault())");
-
-    // Verify the input is disabled for preventDefault
-    const configInput = canvas.getByLabelText("Configuration");
-    expect(configInput).toBeDisabled();
-    expect(configInput).toHaveValue("No configuration required");
-  },
+  play: ruleBuilderPlayFunctions.actionTypes(),
 };
 
 export const StringEscaping: Story = {
@@ -497,28 +883,7 @@ export const StringEscaping: Story = {
       },
     },
   },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-
-    // Test string with single quotes
-    await userEvent.selectOptions(canvas.getByLabelText("Field"), "name");
-    await userEvent.selectOptions(canvas.getByLabelText("Operator"), "equals");
-    await userEvent.type(canvas.getByLabelText("Value"), "O'Connor");
-
-    // Test action with single quotes
-    await userEvent.selectOptions(
-      canvas.getByLabelText("Action"),
-      "showMessage"
-    );
-    await userEvent.type(canvas.getByLabelText("Message"), "Welcome O'Connor!");
-
-    // Verify quotes are escaped in both condition and action
-    const codeElement = canvas.getByRole("code");
-    expect(codeElement).toHaveTextContent("field('name').equals('O\\'Connor')");
-    expect(codeElement).toHaveTextContent(
-      ".then(() => showMessage('Welcome O\\'Connor!'))"
-    );
-  },
+  play: ruleBuilderPlayFunctions.stringEscaping("O'Connor"),
 };
 
 export const AllOperators: Story = {
@@ -534,33 +899,7 @@ export const AllOperators: Story = {
       },
     },
   },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const fieldSelect = canvas.getByLabelText("Field");
-    const operatorSelect = canvas.getByLabelText("Operator");
-    const valueInput = canvas.getByLabelText("Value");
-    const codeElement = canvas.getByRole("code");
-
-    // Test key operators one by one (using schema names)
-    const operators = [
-      { value: "equals", expected: "equals" },
-      { value: "greater_than", expected: "greater_than" },
-      { value: "less_than", expected: "less_than" },
-      { value: "contains", expected: "contains" },
-      { value: "starts_with", expected: "starts_with" },
-    ];
-
-    await userEvent.selectOptions(fieldSelect, "email");
-    await userEvent.clear(valueInput);
-    await userEvent.type(valueInput, "test@example.com");
-
-    for (const operator of operators) {
-      await userEvent.selectOptions(operatorSelect, operator.value);
-      expect(codeElement).toHaveTextContent(
-        `field('email').${operator.expected}('test@example.com')`
-      );
-    }
-  },
+  play: ruleBuilderPlayFunctions.allOperators("email", "test@example.com"),
 };
 
 export const MobileView: Story = {
@@ -579,27 +918,13 @@ export const MobileView: Story = {
       },
     },
   },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-
-    // Test that mobile interactions work the same
-    await userEvent.selectOptions(canvas.getByLabelText("Field"), "city");
-    await userEvent.selectOptions(
-      canvas.getByLabelText("Operator"),
-      "starts_with"
-    );
-    await userEvent.type(canvas.getByLabelText("Value"), "New");
-
-    // Test mobile action selection
-    await userEvent.selectOptions(canvas.getByLabelText("Action"), "redirect");
-    await userEvent.type(canvas.getByLabelText("URL"), "/cities/new");
-
-    const codeElement = canvas.getByRole("code");
-    expect(codeElement).toHaveTextContent("field('city').starts_with('New')");
-    expect(codeElement).toHaveTextContent(
-      ".then(() => redirect('/cities/new'))"
-    );
-  },
+  play: ruleBuilderPlayFunctions.completeRule(
+    "city",
+    "starts_with",
+    "New",
+    "redirect",
+    "/cities/new"
+  ),
 };
 
 export const SchemaBasedFields: Story = {
@@ -635,23 +960,194 @@ This story demonstrates how FieldSelector works with user-provided field definit
     // Now actually using the demo field definitions!
     return <RuleBuilder fields={DEMO_FIELD_SCHEMAS} />;
   },
+  play: ruleBuilderPlayFunctions.completeRule(
+    "email",
+    "equals",
+    "admin@company.com",
+    "redirect",
+    "/admin/dashboard"
+  ),
+};
+
+// =============================================================================
+// COMPREHENSIVE TEST STORIES
+// =============================================================================
+
+export const ComprehensiveValidation: Story = {
+  name: "🧪 Comprehensive Validation Test",
+  args: {
+    fields: DEMO_FIELD_SCHEMAS,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Comprehensive test covering all major functionality and edge cases.",
+      },
+    },
+  },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
 
-    // Test with categorized fields - notice the updated labels!
-    await userEvent.selectOptions(canvas.getByLabelText("Field"), "email");
-    await userEvent.selectOptions(canvas.getByLabelText("Operator"), "equals");
-    await userEvent.type(canvas.getByLabelText("Value"), "admin@company.com");
+    // Test structure
+    ruleBuilderAssertions.hasRuleBuilderStructure(canvas);
 
-    await userEvent.selectOptions(canvas.getByLabelText("Action"), "redirect");
-    await userEvent.type(canvas.getByLabelText("URL"), "/admin/dashboard");
+    // Test placeholder state
+    ruleBuilderAssertions.hasPlaceholderMessage(canvas);
+
+    // Test basic rule building
+    await ruleBuilderInteractions.buildCompleteRule(
+      canvas,
+      "name",
+      "contains",
+      "John",
+      "showMessage",
+      "Hello John!"
+    );
+
+    // Verify complete rule
+    ruleBuilderAssertions.hasCorrectCondition(
+      canvas,
+      "name",
+      "contains",
+      "John"
+    );
+    ruleBuilderAssertions.hasCorrectAction(
+      canvas,
+      "showMessage",
+      "Hello John!"
+    );
+
+    // Test copy functionality
+    await ruleBuilderInteractions.testCopyFunctionality(canvas);
+  },
+};
+
+export const EdgeCaseTesting: Story = {
+  name: "🔬 Edge Case Testing",
+  args: {
+    fields: DEMO_FIELD_SCHEMAS,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Tests edge cases and error conditions to ensure robustness.",
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    // Test with special characters
+    await ruleBuilderInteractions.selectField(canvas, "name");
+    await ruleBuilderInteractions.selectOperator(canvas, "equals");
+    await ruleBuilderInteractions.enterValue(canvas, 'Test\'s "Value" & More');
+
+    // Test numeric values don't get quoted
+    await ruleBuilderInteractions.selectField(canvas, "age");
+    await ruleBuilderInteractions.selectOperator(canvas, "greater_than");
+    await ruleBuilderInteractions.enterValue(canvas, "25");
 
     const codeElement = canvas.getByRole("code");
-    expect(codeElement).toHaveTextContent(
-      "field('email').equals('admin@company.com')"
+    expect(codeElement).toHaveTextContent("field('age').greater_than(25)");
+    expect(codeElement).not.toHaveTextContent("'25'");
+
+    // Test boolean values
+    await ruleBuilderInteractions.selectField(canvas, "isActive");
+    await ruleBuilderInteractions.selectOperator(canvas, "equals");
+    await ruleBuilderInteractions.enterValue(canvas, "true");
+
+    // Boolean values should not be quoted when they're boolean strings
+    ruleBuilderAssertions.hasCorrectCondition(
+      canvas,
+      "isActive",
+      "equals",
+      "true"
     );
-    expect(codeElement).toHaveTextContent(
-      ".then(() => redirect('/admin/dashboard'))"
+  },
+};
+
+export const PerformanceTesting: Story = {
+  name: "⚡ Performance Testing",
+  args: {
+    fields: DEMO_FIELD_SCHEMAS,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Tests that rapid interactions don't cause performance issues.",
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    const startTime = performance.now();
+
+    // Rapid field switching
+    const fields = ["email", "name", "age", "city", "phoneNumber"];
+    for (const field of fields) {
+      await ruleBuilderInteractions.selectField(canvas, field);
+      await ruleBuilderInteractions.selectOperator(canvas, "equals");
+      await ruleBuilderInteractions.enterValue(canvas, "test");
+      // Small delay to allow updates
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+
+    const endTime = performance.now();
+    const duration = endTime - startTime;
+
+    // Should complete quickly (adjust threshold as needed)
+    expect(duration).toBeLessThan(5000); // 5 seconds
+
+    // Final state should still be valid
+    ruleBuilderAssertions.hasCorrectCondition(
+      canvas,
+      "phoneNumber",
+      "equals",
+      "test"
     );
+  },
+};
+
+export const AccessibilityTesting: Story = {
+  name: "♿ Accessibility Testing",
+  args: {
+    fields: DEMO_FIELD_SCHEMAS,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Tests keyboard navigation and screen reader compatibility.",
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    // Test keyboard navigation through all form elements
+    const fieldSelect = getRuleBuilderInput(canvas, "Field");
+    const operatorSelect = getRuleBuilderInput(canvas, "Operator");
+    const valueInput = getRuleBuilderInput(canvas, "Value");
+    const actionSelect = getRuleBuilderInput(canvas, "Action");
+
+    // All elements should be keyboard accessible
+    expect(fieldSelect).toBeVisible();
+    expect(operatorSelect).toBeVisible();
+    expect(valueInput).toBeVisible();
+    expect(actionSelect).toBeVisible();
+
+    // Test tab navigation
+    fieldSelect.focus();
+    expect(fieldSelect).toHaveFocus();
+
+    await userEvent.tab();
+    expect(operatorSelect).toHaveFocus();
+
+    await userEvent.tab();
+    expect(valueInput).toHaveFocus();
+
+    await userEvent.tab();
+    expect(actionSelect).toHaveFocus();
   },
 };

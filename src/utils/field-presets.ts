@@ -1,69 +1,72 @@
-import { fieldMeta } from "@/utils";
-import type { FieldMetadata } from "../schemas/field.schema";
+import { z } from "zod/v4";
+import { createField } from "../lib/fieldUtils";
+import type { FieldMetadata } from "@/schemas";
 
 /**
- * Common field metadata presets for convenience
+ * Common field presets using the new createField API with registry system
  */
 export const FieldPresets = {
-  password: fieldMeta({
+  // Basic text fields
+  email: createField(z.string().email(), {
+    inputType: "email",
+    placeholder: "user@example.com",
+  }),
+
+  password: createField(z.string().min(8), {
     inputType: "password",
     encrypted: true,
     showStrengthMeter: true,
   }),
 
-  email: fieldMeta({
-    inputType: "email",
-    placeholder: "user@example.com",
-  }),
-
-  url: fieldMeta({
+  url: createField(z.string().url(), {
     inputType: "url",
     placeholder: "https://example.com",
   }),
 
-  phone: fieldMeta({
+  phone: createField(z.string(), {
     inputType: "tel",
     placeholder: "+1 (555) 123-4567",
   }),
 
-  textarea: fieldMeta({
+  // Textarea fields
+  bio: createField(z.string().min(10), {
     rows: 4,
     resizable: true,
   }),
 
-  secretToken: fieldMeta({
-    inputType: "password",
-    encrypted: true,
+  textarea: createField(z.string(), {
+    rows: 4,
+    resizable: true,
   }),
 
-  apiKey: fieldMeta({
-    inputType: "password",
-    encrypted: true,
-    showCounter: true,
+  // Numeric fields
+  age: createField(z.number().min(0).max(150), {
+    inputType: "number",
+    step: 1,
   }),
 
-  percentage: fieldMeta({
+  rating: createField(z.number().min(1).max(5), {
+    showSlider: true,
+    max: 5,
+    allowHalf: true,
+    showValue: true,
+  }),
+
+  percentage: createField(z.number().min(0).max(100), {
     inputType: "number",
     suffix: "%",
     step: 0.1,
     showSlider: true,
   }),
 
-  currency: fieldMeta({
+  currency: createField(z.number().min(0), {
     inputType: "number",
     prefix: "$",
     step: 0.01,
   }),
 
-  duration: fieldMeta({
-    inputType: "number",
-    suffix: "minutes",
-    step: 1,
-    showSlider: true,
-  }),
-
-  // Advanced field presets
-  avatar: fieldMeta({
+  // File upload fields
+  avatar: createField(z.string(), {
     accept: "image/*",
     maxFiles: 1,
     maxFileSize: 5 * 1024 * 1024, // 5MB
@@ -78,7 +81,7 @@ export const FieldPresets = {
     },
   }),
 
-  documents: fieldMeta({
+  documents: createField(z.array(z.string()), {
     accept: ".pdf,.doc,.docx,.txt",
     multiple: true,
     maxFiles: 10,
@@ -88,7 +91,27 @@ export const FieldPresets = {
     previewType: "list",
   }),
 
-  blogPost: fieldMeta({
+  // Date/Time fields
+  birthDate: createField(z.string(), {
+    inputType: "date",
+    maxDate: new Date().toISOString().split("T")[0], // Today
+  }),
+
+  appointmentDateTime: createField(z.string(), {
+    inputType: "datetime-local",
+  }),
+
+  // Selection fields
+  singleChoice: createField(z.enum(["option1", "option2", "option3"]), {
+    format: "radio",
+  }),
+
+  multiChoice: createField(z.array(z.enum(["tag1", "tag2", "tag3"])), {
+    format: "checkbox-group",
+  }),
+
+  // Rich text
+  blogPost: createField(z.string().min(50), {
     mode: "wysiwyg",
     toolbar: ["bold", "italic", "link", "image", "code"],
     allowImages: true,
@@ -97,141 +120,14 @@ export const FieldPresets = {
     autoSave: true,
   }),
 
-  dateRange: fieldMeta({
-    rangeType: "date",
-    allowSingleDate: false,
-    presets: [
-      { label: "Last 7 days", value: { start: "-7d", end: "today" } },
-      { label: "Last 30 days", value: { start: "-30d", end: "today" } },
-      {
-        label: "This month",
-        value: { start: "month-start", end: "month-end" },
-      },
-    ],
-  }),
-
-  address: fieldMeta({
-    addressType: "full",
-    enableGeocoding: true,
-    enableAutocomplete: true,
-    showMap: false,
-    requireValidAddress: true,
-  }),
-
-  signature: fieldMeta({
+  // Signature
+  signature: createField(z.string(), {
     width: 400,
     height: 200,
     penColor: "#000000",
-    penWidth: 2,
     backgroundColor: "#ffffff",
     outputFormat: "png",
     showClearButton: true,
-    saveAsDataUrl: true,
-  }),
-
-  // Additional signature presets
-  signatureSVG: fieldMeta({
-    width: 500,
-    height: 250,
-    penColor: "#2563eb", // Blue pen
-    penWidth: 3,
-    backgroundColor: "rgba(255,255,255,0)", // Transparent background
-    outputFormat: "svg",
-    showClearButton: true,
-    showUndoButton: true,
-    saveAsDataUrl: true,
-    compressionLevel: 1.0,
-  }),
-
-  contractSignature: fieldMeta({
-    width: 600,
-    height: 150,
-    penColor: "#1f2937", // Dark gray
-    penWidth: 2,
-    backgroundColor: "#f9fafb", // Light gray background
-    outputFormat: "png",
-    showClearButton: true,
-    showUndoButton: false,
-    saveAsDataUrl: true,
-    compressionLevel: 0.9,
-  }),
-
-  mobileSignature: fieldMeta({
-    width: 300,
-    height: 150,
-    penColor: "#000000",
-    penWidth: 4, // Thicker for mobile/touch
-    backgroundColor: "#ffffff",
-    outputFormat: "png",
-    showClearButton: true,
-    showUndoButton: true,
-    saveAsDataUrl: true,
-    compressionLevel: 0.8,
-  }),
-
-  contactList: fieldMeta({
-    minItems: 1,
-    maxItems: 10,
-    allowReorder: true,
-    addButtonText: "Add Contact",
-    removeButtonText: "Remove",
-    itemTemplate: {
-      title: "Contact {index}",
-      collapsible: true,
-      defaultExpanded: false,
-    },
-  }),
-
-  // Date/Time presets
-  birthDate: fieldMeta({
-    inputType: "date",
-    maxDate: new Date().toISOString().split("T")[0], // Today
-  }),
-
-  appointmentDateTime: fieldMeta({
-    inputType: "datetime-local",
-  }),
-
-  workingHours: fieldMeta({
-    inputType: "time",
-    placeholder: "9:00 AM",
-  }),
-
-  // Radio and Checkbox presets
-  singleChoice: fieldMeta({
-    format: "radio",
-  }),
-
-  multiChoice: fieldMeta({
-    format: "checkbox-group",
-  }),
-
-  // Rating presets
-  starRating: fieldMeta({
-    max: 5,
-    allowHalf: false,
-    showValue: true,
-    icon: "star",
-  }),
-
-  halfStarRating: fieldMeta({
-    max: 5,
-    allowHalf: true,
-    showValue: true,
-    icon: "star",
-  }),
-
-  satisfactionRating: fieldMeta({
-    max: 10,
-    allowHalf: false,
-    showValue: true,
-    icon: "star",
-  }),
-
-  npsScore: fieldMeta({
-    max: 10,
-    allowHalf: false,
-    showValue: true,
   }),
 } as const;
 

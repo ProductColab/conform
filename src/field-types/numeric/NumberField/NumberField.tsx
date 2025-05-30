@@ -20,6 +20,7 @@ interface NumberFieldProps {
   label: string;
   description?: string;
   metadata: FieldMetadata;
+  disabled?: boolean;
 }
 
 export function NumberField({
@@ -29,6 +30,7 @@ export function NumberField({
   label,
   description,
   metadata,
+  disabled = false,
 }: NumberFieldProps) {
   const formContext = useFormContext();
 
@@ -64,6 +66,7 @@ export function NumberField({
                 min={constraints.min}
                 max={constraints.max}
                 step={constraints.step}
+                disabled={disabled}
                 className={prefix ? "pl-8" : suffix ? "pr-16" : ""}
               />
               {suffix && (

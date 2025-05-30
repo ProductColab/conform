@@ -2,15 +2,15 @@ import jsonLogic from "json-logic-js";
 import validator from "validator";
 import { isAfter, isBefore, isWeekend, parseISO, isValid } from "date-fns";
 import {
-  type BaseConditionType,
-  type ComparisonOperatorType,
-  type ComplexConditionType,
-  type ContextReferenceType,
-  type DynamicValueType,
-  type FieldReferenceType,
-  type FunctionReferenceType,
-  type RuleConditionType,
-  type RuleContextType,
+  type BaseCondition,
+  type ComparisonOperator,
+  type ComplexCondition,
+  type ContextReference,
+  type DynamicValue,
+  type FieldReference,
+  type FunctionReference,
+  type RuleCondition,
+  type RuleContext,
 } from "../schemas/rule.schema";
 
 export type CustomFunctions = Record<string, (...args: unknown[]) => unknown>;
@@ -83,8 +83,8 @@ function getNestedProperty(obj: unknown, path: string): unknown {
  * Resolves a dynamic value to its actual value for comparison.
  */
 export function resolveDynamicValue(
-  value: DynamicValueType,
-  context: RuleContextType,
+  value: DynamicValue,
+  context: RuleContext,
   customFunctions: CustomFunctions = {},
   transformFunctions: TransformFunctions = {}
 ): unknown {
@@ -104,8 +104,8 @@ export function resolveDynamicValue(
   if (typeof value === "object" && value !== null) {
     switch (value.type) {
       case "field": {
-        const { fieldName, property } = value as FieldReferenceType;
-        let fieldValue = context.formData[fieldName];
+        const { fieldName, property } = value as FieldReference;
+        const fieldValue = context.formData[fieldName];
         if (
           property &&
           fieldValue &&
@@ -117,11 +117,11 @@ export function resolveDynamicValue(
         return fieldValue;
       }
       case "context": {
-        const { key } = value as ContextReferenceType;
+        const { key } = value as ContextReference;
         return getNestedProperty(context, key);
       }
       case "function": {
-        const { name, args } = value as FunctionReferenceType;
+        const { name, args } = value as FunctionReference;
         const func = customFunctions[name];
         if (typeof func !== "function") {
           throw new Error(`Unknown function: ${name}`);
@@ -129,7 +129,7 @@ export function resolveDynamicValue(
         const resolvedArgs =
           args?.map((arg) =>
             resolveDynamicValue(
-              arg as DynamicValueType,
+              arg as DynamicValue,
               context,
               customFunctions,
               transformFunctions
@@ -151,7 +151,7 @@ export function resolveDynamicValue(
  */
 export function evaluateComparison(
   leftValue: unknown,
-  operator: ComparisonOperatorType,
+  operator: ComparisonOperator,
   rightValue: unknown
 ): boolean {
   // Use JSONLogic for basic operators
@@ -162,20 +162,23 @@ export function evaluateComparison(
       // Special handling for 'in' operators with JSONLogic
       if (operator === "in") {
         return jsonLogic.apply(
-          { [jsonLogicOperator]: [leftValue as any, rightValue as any] },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          { [jsonLogicOperator]: [leftValue, rightValue] } as any,
           {}
         );
       }
       if (operator === "not_in") {
         return !jsonLogic.apply(
-          { in: [leftValue as any, rightValue as any] },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          { in: [leftValue, rightValue] } as any,
           {}
         );
       }
 
       // Standard comparison
       return jsonLogic.apply(
-        { [jsonLogicOperator]: [leftValue as any, rightValue as any] },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        { [jsonLogicOperator]: [leftValue, rightValue] } as any,
         {}
       );
     } catch (error) {
@@ -259,25 +262,29 @@ export function evaluateComparison(
       return typeof leftValue === "string" && validator.isUUID(leftValue);
 
     // New date operators using date-fns
-    case "before_date":
+    case "before_date": {
       const leftDate = parseDate(leftValue);
       const rightDate = parseDate(rightValue);
       return leftDate && rightDate ? isBefore(leftDate, rightDate) : false;
+    }
 
-    case "after_date":
+    case "after_date": {
       const leftDateAfter = parseDate(leftValue);
       const rightDateAfter = parseDate(rightValue);
       return leftDateAfter && rightDateAfter
         ? isAfter(leftDateAfter, rightDateAfter)
         : false;
+    }
 
-    case "is_weekend":
+    case "is_weekend": {
       const weekendDate = parseDate(leftValue);
       return weekendDate ? isWeekend(weekendDate) : false;
+    }
 
-    case "is_business_day":
+    case "is_business_day": {
       const businessDate = parseDate(leftValue);
       return businessDate ? !isWeekend(businessDate) : false;
+    }
 
     // New numeric range operators
     case "between":
@@ -337,8 +344,8 @@ export function evaluateComparison(
  * Evaluates a base condition.
  */
 export function evaluateBaseCondition(
-  condition: BaseConditionType,
-  context: RuleContextType,
+  condition: BaseCondition,
+  context: RuleContext,
   customFunctions: CustomFunctions = {},
   transformFunctions: TransformFunctions = {}
 ): boolean {
@@ -362,8 +369,8 @@ export function evaluateBaseCondition(
  * Evaluates a complex condition with logical operators.
  */
 export function evaluateComplexCondition(
-  condition: ComplexConditionType,
-  context: RuleContextType,
+  condition: ComplexCondition,
+  context: RuleContext,
   customFunctions: CustomFunctions = {},
   transformFunctions: TransformFunctions = {}
 ): boolean {
@@ -372,13 +379,13 @@ export function evaluateComplexCondition(
   const results = condition.conditions.map((subCondition) =>
     "conditions" in subCondition
       ? evaluateComplexCondition(
-          subCondition as ComplexConditionType,
+          subCondition as ComplexCondition,
           context,
           customFunctions,
           transformFunctions
         )
       : evaluateBaseCondition(
-          subCondition as BaseConditionType,
+          subCondition as BaseCondition,
           context,
           customFunctions,
           transformFunctions
@@ -401,22 +408,22 @@ export function evaluateComplexCondition(
  * Main function to evaluate any rule condition.
  */
 export function evaluateRuleCondition(
-  condition: RuleConditionType,
-  context: RuleContextType,
+  condition: RuleCondition,
+  context: RuleContext,
   customFunctions: CustomFunctions = {},
   transformFunctions: TransformFunctions = {}
 ): boolean {
   try {
     if ("conditions" in condition) {
       return evaluateComplexCondition(
-        condition as ComplexConditionType,
+        condition as ComplexCondition,
         context,
         customFunctions,
         transformFunctions
       );
     }
     return evaluateBaseCondition(
-      condition as BaseConditionType,
+      condition as BaseCondition,
       context,
       customFunctions,
       transformFunctions

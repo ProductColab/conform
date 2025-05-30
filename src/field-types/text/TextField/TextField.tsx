@@ -20,6 +20,7 @@ interface TextFieldProps {
   label: string;
   description?: string;
   metadata: FieldMetadata;
+  disabled?: boolean;
 }
 
 export function TextField({
@@ -29,6 +30,7 @@ export function TextField({
   label,
   description,
   metadata,
+  disabled = false,
 }: TextFieldProps) {
   const formContext = useFormContext();
 
@@ -68,6 +70,7 @@ export function TextField({
                   className={prefix ? "pl-8" : suffix ? "pr-16" : ""}
                   aria-invalid={!!fieldState.error}
                   aria-describedby={descriptionId}
+                  disabled={disabled}
                   {...ensureFieldValue(field, "")}
                 />
                 {suffix && (

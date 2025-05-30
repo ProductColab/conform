@@ -19,6 +19,7 @@ interface DateFieldProps {
   label: string;
   description?: string;
   metadata: FieldMetadata;
+  disabled?: boolean;
 }
 
 export function DateField({
@@ -27,6 +28,7 @@ export function DateField({
   label,
   description,
   metadata,
+  disabled = false,
 }: DateFieldProps) {
   const formContext = useFormContext();
 
@@ -59,6 +61,7 @@ export function DateField({
                 min={minDate}
                 max={maxDate}
                 aria-describedby={descriptionId}
+                disabled={disabled}
                 {...field}
                 value={field.value || ""}
               />

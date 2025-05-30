@@ -47,6 +47,7 @@ type SchemaFieldProps = {
   property: z.core.JSONSchema.Schema;
   required: boolean;
   description?: string;
+  disabled?: boolean;
 };
 
 export function SchemaField({
@@ -54,6 +55,7 @@ export function SchemaField({
   property,
   required,
   description: customDescription,
+  disabled = false,
 }: SchemaFieldProps) {
   const formContext = useFormContext();
   const { metadata, label, description } = useFieldMetadata(
@@ -78,6 +80,7 @@ export function SchemaField({
         label={label}
         description={description}
         metadata={metadata}
+        disabled={disabled}
       />
     );
   }
@@ -94,6 +97,7 @@ export function SchemaField({
         label={label}
         description={description}
         metadata={metadata}
+        disabled={disabled}
       />
     );
   }
@@ -111,6 +115,7 @@ export function SchemaField({
         label={label}
         description={description}
         metadata={metadata}
+        disabled={disabled}
       />
     );
   }
@@ -127,6 +132,7 @@ export function SchemaField({
         label={label}
         description={description}
         metadata={metadata}
+        disabled={disabled}
       />
     );
   }
@@ -141,6 +147,7 @@ export function SchemaField({
         label={label}
         description={description}
         metadata={metadata}
+        disabled={disabled}
       />
     );
   }
@@ -155,6 +162,7 @@ export function SchemaField({
         label={label}
         description={description}
         metadata={metadata}
+        disabled={disabled}
       />
     );
   }
@@ -169,6 +177,7 @@ export function SchemaField({
         label={label}
         description={description}
         metadata={metadata}
+        disabled={disabled}
       />
     );
   }
@@ -182,6 +191,7 @@ export function SchemaField({
         label={label}
         description={description}
         metadata={metadata}
+        disabled={disabled}
       />
     );
   }
@@ -196,6 +206,7 @@ export function SchemaField({
         label={label}
         description={description}
         metadata={metadata}
+        disabled={disabled}
       />
     );
   }
@@ -210,6 +221,7 @@ export function SchemaField({
         label={label}
         description={description}
         metadata={metadata}
+        disabled={disabled}
       />
     );
   }
@@ -224,6 +236,7 @@ export function SchemaField({
         label={label}
         description={description}
         metadata={metadata}
+        disabled={disabled}
       />
     );
   }
@@ -238,6 +251,7 @@ export function SchemaField({
         label={label}
         description={description}
         metadata={metadata}
+        disabled={disabled}
       />
     );
   }
@@ -250,6 +264,7 @@ export function SchemaField({
         required={required}
         label={label}
         description={description}
+        disabled={disabled}
       />
     );
   }
@@ -257,7 +272,7 @@ export function SchemaField({
   // Array field with checkbox group (for multi-select with enum items)
   if (isArraySchema(property) && isCheckboxGroupField(metadata)) {
     // Extract enum from items for checkbox group
-    const items = (property as any).items;
+    const items = property.items as z.core.JSONSchema.Schema;
     if (items && hasEnum(items)) {
       return (
         <CheckboxGroupField
@@ -269,6 +284,7 @@ export function SchemaField({
           label={label}
           description={description}
           metadata={metadata}
+          disabled={disabled}
         />
       );
     }

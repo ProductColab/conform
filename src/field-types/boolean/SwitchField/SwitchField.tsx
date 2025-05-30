@@ -15,6 +15,7 @@ interface SwitchFieldProps {
   required: boolean;
   label: string;
   description?: string;
+  disabled?: boolean;
 }
 
 export function SwitchField({
@@ -22,6 +23,7 @@ export function SwitchField({
   required,
   label,
   description,
+  disabled = false,
 }: SwitchFieldProps) {
   const formContext = useFormContext();
 
@@ -48,6 +50,7 @@ export function SwitchField({
             <Switch
               checked={field.value === undefined ? false : field.value}
               onCheckedChange={field.onChange}
+              disabled={disabled}
             />
           </FormControl>
           <FormMessage />

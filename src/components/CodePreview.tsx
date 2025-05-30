@@ -1,40 +1,23 @@
 import React, { useState } from "react";
-import type { Condition, Rule } from "../lib/codeGenerator";
-import { generateFullCode, generateFullCodeLegacy } from "../lib/codeGenerator";
+import type { Rule } from "../schemas/rule.schema";
+import { generateFluentCode } from "../lib/codeGenerator";
 
 interface CodePreviewProps {
   rule?: Rule;
-  condition?: Condition; // Legacy support
 }
 
-export const CodePreview: React.FC<CodePreviewProps> = ({
-  rule,
-  condition,
-}) => {
+export const CodePreview: React.FC<CodePreviewProps> = ({ rule }) => {
   const [copied, setCopied] = useState(false);
 
   // Generate code from the current rule or legacy condition
   const generatedCode = (() => {
-    if (
-      rule &&
-      rule.condition.field &&
-      rule.condition.operator &&
-      rule.condition.value
-    ) {
-      return generateFullCode(rule);
-    } else if (
-      condition &&
-      condition.field &&
-      condition.operator &&
-      condition.value
-    ) {
-      // Legacy support
-      return generateFullCodeLegacy(condition);
-    } else {
-      return `import { field } from '@conform/rule-builder';
+    if (rule) {
+      return generateFluentCode(rule);
+    }
+
+    return `import { field } from '@conform/rule-builder';
 
 // Select a field, operator, and value to see generated code`;
-    }
   })();
 
   const handleCopy = async () => {

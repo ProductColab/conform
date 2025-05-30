@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { RuleBuilder, CommonRules, RuleTestUtils } from "../utils/rule-builder";
-import type { RuleDefinition } from "../hooks/useFormRules";
+import type { Rule } from "../schemas/rule.schema";
 
 describe("RuleBuilder", () => {
   it("should build a simple equals visibility rule", () => {
@@ -15,11 +15,12 @@ describe("RuleBuilder", () => {
       operator: "equals",
       value: "active",
     });
-    expect(rules[0].action).toEqual({
-      type: "field-visibility",
-      field: "details",
-      visible: true,
-    });
+    expect(rules[0].actions).toEqual([
+      {
+        type: "show",
+        target: "details",
+      },
+    ]);
   });
 
   it("should build a required field rule", () => {
@@ -34,11 +35,13 @@ describe("RuleBuilder", () => {
       operator: "greater_than",
       value: 18,
     });
-    expect(rules[0].action).toEqual({
-      type: "field-required",
-      field: "driversLicense",
-      required: true,
-    });
+    expect(rules[0].actions).toEqual([
+      {
+        type: "set_value",
+        target: "driversLicense",
+        params: { required: true },
+      },
+    ]);
   });
 
   it("should build multiple rules with create", () => {
@@ -63,11 +66,12 @@ describe("RuleBuilder", () => {
       operator: "not_equals",
       value: "admin",
     });
-    expect(rules[0].action).toEqual({
-      type: "field-visibility",
-      field: "adminPanel",
-      visible: false,
-    });
+    expect(rules[0].actions).toEqual([
+      {
+        type: "hide",
+        target: "adminPanel",
+      },
+    ]);
   });
 
   it("should support in and notIn operators", () => {
@@ -144,8 +148,8 @@ describe("RuleBuilder", () => {
       .build();
 
     expect(rules).toHaveLength(1);
-    expect(rules[0].action.type).toBe("field-required");
-    expect(rules[0].action.required).toBe(false);
+    expect(rules[0].actions[0].type).toBe("set_value");
+    expect(rules[0].actions[0].params?.required).toBe(false);
     // The following assertions are commented out because
     // the corresponding actions are not present.
     // expect(rules[1].action.type).toBe("field-disabled");
@@ -158,11 +162,12 @@ describe("RuleBuilder", () => {
 describe("CommonRules", () => {
   it("should create showWhen rule", () => {
     const rule = CommonRules.showWhen("foo", "bar", 1);
-    expect(rule.action).toEqual({
-      type: "field-visibility",
-      field: "foo",
-      visible: true,
-    });
+    expect(rule.actions).toEqual([
+      {
+        type: "show",
+        target: "foo",
+      },
+    ]);
     expect(rule.condition).toEqual({
       field: "bar",
       operator: "equals",
@@ -172,20 +177,21 @@ describe("CommonRules", () => {
 
   it("should create hideWhen rule", () => {
     const rule = CommonRules.hideWhen("foo", "bar", 2);
-    expect(rule.action.visible).toBe(false);
+    expect(rule.actions[0].type).toBe("hide");
+    expect(rule.actions[0].target).toBe("foo");
   });
 
   it("should create requireWhen rule", () => {
     const rule = CommonRules.requireWhen("foo", "bar", 3);
-    expect(rule.action.type).toBe("field-required");
-    expect(rule.action.required).toBe(true);
+    expect(rule.actions[0].type).toBe("set_value");
+    expect(rule.actions[0].params?.required).toBe(true);
   });
 
   it("should create showFieldsWhen for multiple fields", () => {
     const rules = CommonRules.showFieldsWhen(["a", "b"], "x", "y");
     expect(rules).toHaveLength(2);
-    expect(rules[0].action.field).toBe("a");
-    expect(rules[1].action.field).toBe("b");
+    expect(rules[0].actions[0].target).toBe("a");
+    expect(rules[1].actions[0].target).toBe("b");
   });
 
   it("should create spouseFieldsWhenMarried", () => {
@@ -194,31 +200,26 @@ describe("CommonRules", () => {
       "spouseIncome",
     ]);
     expect(rules).toHaveLength(2);
-    expect(rules[0].action.field).toBe("spouseName");
-    expect(rules[1].action.field).toBe("spouseIncome");
-    // The following assertion is commented out because
-    // 'conditions' property may not exist on the condition object.
-    // expect(rules[0].condition.conditions[0].value).toBe("married");
+    expect(rules[0].actions[0].target).toBe("spouseName");
+    expect(rules[1].actions[0].target).toBe("spouseIncome");
+    expect(rules[0].condition.operator).toBe("equals");
+    expect((rules[0].condition as { value: unknown }).value).toBe("married");
   });
 
   it("should create requirePhoneForPhoneContact", () => {
     const rule = CommonRules.requirePhoneForPhoneContact();
-    expect(rule.action.field).toBe("phone");
-    // The following assertions are commented out because
-    // 'field' and 'value' may not exist on the condition object if it's a group.
-    // expect(rule.condition.field).toBe("contactPreference");
-    // expect(rule.condition.value).toBe("phone");
+    expect(rule.actions[0].target).toBe("phone");
+    expect(rule.condition.operator).toBe("equals");
+    expect((rule.condition as { value: unknown }).value).toBe("phone");
   });
 
   it("should create additionalIncomeForHighEarners", () => {
     const rules = CommonRules.additionalIncomeForHighEarners(50000);
     expect(rules).toHaveLength(2);
-    // The following assertions are commented out because
-    // 'value' may not exist on the condition object if it's a group.
-    // expect(rules[0].condition.operator).toBe("greater_than");
-    // expect(rules[0].condition.value).toBe(50000);
-    expect(rules[0].action.field).toBe("additionalIncomeSource");
-    expect(rules[1].action.field).toBe("additionalIncomeAmount");
+    expect(rules[0].condition.operator).toBe("greater_than");
+    expect((rules[0].condition as { value: unknown }).value).toBe(50000);
+    expect(rules[0].actions[0].target).toBe("additionalIncomeSource");
+    expect(rules[1].actions[0].target).toBe("additionalIncomeAmount");
   });
 });
 
@@ -231,11 +232,12 @@ describe("RuleTestUtils", () => {
       operator: "equals",
       value: "baz",
     });
-    expect(rule.action).toEqual({
-      type: "field-visibility",
-      field: "foo",
-      visible: true,
-    });
+    expect(rule.actions).toEqual([
+      {
+        type: "show",
+        target: "foo",
+      },
+    ]);
   });
 
   it("should create a batch of test rules", () => {
@@ -245,10 +247,16 @@ describe("RuleTestUtils", () => {
   });
 
   it("should validate a valid rule", () => {
-    const rule: RuleDefinition = {
+    const rule: Rule = {
       id: "test",
       condition: { field: "foo", operator: "equals", value: 1 },
-      action: { type: "field-visibility", field: "bar", visible: true },
+      actions: [
+        {
+          type: "show",
+          target: "bar",
+        },
+      ],
+      enabled: true,
     };
     const result = RuleTestUtils.validateRule(rule);
     expect(result.valid).toBe(true);
@@ -260,7 +268,7 @@ describe("RuleTestUtils", () => {
       id: "",
       condition: null,
       action: null,
-    } as unknown as RuleDefinition;
+    } as unknown as Rule;
     const result = RuleTestUtils.validateRule(rule);
     expect(result.valid).toBe(false);
     expect(result.errors.length).toBeGreaterThan(0);

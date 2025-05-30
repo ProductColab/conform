@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "outDir": "./dist/cli",
+    "rootDir": "./src/cli",
+    "declaration": true,
+    "sourceMap": true,
+    "resolveJsonModule": true,
+    "noEmit": false
+  },
+  "include": ["src/cli/**/*"],
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.stories.ts",
+    "src/lib/**/*",
+    "src/components/**/*",
+    "src/field-types/**/*"
+  ]
+}

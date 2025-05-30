@@ -21,6 +21,7 @@ interface SliderFieldProps {
   label: string;
   description?: string;
   metadata: FieldMetadata;
+  disabled?: boolean;
 }
 
 export function SliderField({
@@ -30,6 +31,7 @@ export function SliderField({
   label,
   description,
   metadata,
+  disabled = false,
 }: SliderFieldProps) {
   const formContext = useFormContext();
 
@@ -59,6 +61,7 @@ export function SliderField({
                 step={constraints.step}
                 value={[field.value === undefined ? defaultValue : field.value]}
                 onValueChange={(vals) => field.onChange(vals[0])}
+                disabled={disabled}
               />
               <div className="relative">
                 {prefix && (
@@ -73,6 +76,7 @@ export function SliderField({
                   min={constraints.min}
                   max={constraints.max}
                   step={constraints.step}
+                  disabled={disabled}
                   className={prefix ? "pl-8" : suffix ? "pr-16" : ""}
                 />
                 {suffix && (

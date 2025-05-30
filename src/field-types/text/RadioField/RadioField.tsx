@@ -19,6 +19,7 @@ interface RadioFieldProps {
   label: string;
   description?: string;
   metadata: FieldMetadata;
+  disabled?: boolean;
 }
 
 export function RadioField({
@@ -27,6 +28,7 @@ export function RadioField({
   required,
   label,
   description,
+  disabled = false,
 }: RadioFieldProps) {
   const formContext = useFormContext();
 
@@ -64,6 +66,7 @@ export function RadioField({
                       value={optionValue}
                       checked={field.value === optionValue}
                       onChange={() => field.onChange(optionValue)}
+                      disabled={disabled}
                       className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                     <Label

@@ -5,26 +5,26 @@ import { ValueInput } from "./ValueInput";
 import { ActionSelector } from "./ActionSelector";
 import { ActionValueInput } from "./ActionValueInput";
 import { CodePreview } from "./CodePreview";
-import type { Condition, Action, Rule } from "../lib/codeGenerator";
 import type { FieldSchemas } from "../lib/fieldUtils";
+import type { BaseCondition, RuleAction, Rule } from "../schemas/rule.schema";
 
 interface RuleBuilderProps {
   fields: FieldSchemas;
 }
 
 export const RuleBuilder: React.FC<RuleBuilderProps> = ({ fields }) => {
-  const [condition, setCondition] = useState<Condition>({
+  const [condition, setCondition] = useState<BaseCondition>({
     field: "",
-    operator: "",
+    operator: "equals" as const,
     value: "",
   });
 
-  const [action, setAction] = useState<Action>({
-    type: "",
+  const [action, setAction] = useState<RuleAction>({
+    type: "" as RuleAction["type"],
     value: "",
   });
 
-  const updateCondition = (updates: Partial<Condition>) => {
+  const updateCondition = (updates: Partial<BaseCondition>) => {
     setCondition((prev) => ({ ...prev, ...updates }));
   };
 
@@ -32,27 +32,31 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({ fields }) => {
     let convertedValue: string | number | boolean = value;
 
     if (typeof value === "string") {
+      // Try to convert boolean strings
+      if (value === "true") {
+        convertedValue = true;
+      } else if (value === "false") {
+        convertedValue = false;
+      }
       // Try to convert numeric strings to numbers
-      if (/^\d+$/.test(value)) {
+      else if (/^\d+$/.test(value)) {
         convertedValue = parseInt(value, 10);
       } else if (/^\d*\.\d+$/.test(value)) {
         convertedValue = parseFloat(value);
       }
-      // Only convert boolean strings if we're dealing with a boolean field
-      // For now, keep strings as strings unless it's clearly numeric
-      // This is more conservative and matches test expectations
     }
 
     updateCondition({ value: convertedValue });
   };
 
-  const updateAction = (updates: Partial<Action>) => {
+  const updateAction = (updates: Partial<RuleAction>) => {
     setAction((prev) => ({ ...prev, ...updates }));
   };
 
   const rule: Rule = {
     condition,
-    action: action.type ? action : undefined,
+    actions: action.type ? [action] : [],
+    enabled: true,
   };
 
   return (
@@ -81,7 +85,7 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({ fields }) => {
                   onChange={(operator) => updateCondition({ operator })}
                 />
                 <ValueInput
-                  value={condition.value}
+                  value={condition.value as string | number | boolean}
                   onChange={(value) => updateValue(value)}
                 />
               </div>
@@ -97,11 +101,13 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({ fields }) => {
                   value={action.type}
                   onChange={(type) => updateAction({ type, value: "" })}
                 />
-                <ActionValueInput
-                  actionType={action.type}
-                  value={action.value}
-                  onChange={(value) => updateAction({ value })}
-                />
+                {action.type && (
+                  <ActionValueInput
+                    actionType={action.type}
+                    value={action.value as string}
+                    onChange={(value) => updateAction({ value })}
+                  />
+                )}
               </div>
             </div>
           </div>

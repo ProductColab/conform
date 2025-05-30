@@ -1,14 +1,11 @@
 import { describe, expect, test } from "vitest";
 import { RuleBuilders } from "../schemas/rule.schema";
 import { evaluateRuleCondition } from "../utils/rule-evaluation";
-import type {
-  BaseConditionType,
-  RuleContextType,
-} from "../schemas/rule.schema";
+import type { BaseCondition, RuleContext } from "../schemas/rule.schema";
 
 const createTestContext = (
   formData: Record<string, unknown> = {}
-): RuleContextType => ({
+): RuleContext => ({
   formData,
   user: { id: "123", role: "admin", name: "John Doe" },
   permissions: ["read", "write", "admin"],
@@ -45,7 +42,7 @@ describe("Rules Examples - Migration from dependsOn/showWhen", () => {
 
   test("Multiple field dependencies with AND logic", () => {
     // Show billing fields only if user is premium AND has billing enabled
-    const conditions: BaseConditionType[] = [
+    const conditions: BaseCondition[] = [
       { field: "accountType", operator: "equals", value: "premium" },
       { field: "billingEnabled", operator: "equals", value: true },
     ];
@@ -75,7 +72,7 @@ describe("Rules Examples - Migration from dependsOn/showWhen", () => {
 
   test("Multiple field dependencies with OR logic", () => {
     // Show contact field if user is VIP OR has high priority OR is admin
-    const conditions: BaseConditionType[] = [
+    const conditions: BaseCondition[] = [
       { field: "userTier", operator: "equals", value: "vip" },
       { field: "priority", operator: "equals", value: "high" },
       { field: "isAdmin", operator: "equals", value: true },

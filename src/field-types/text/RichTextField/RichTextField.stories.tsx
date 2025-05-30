@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, within, userEvent } from "@storybook/test";
 import { RichTextField } from "./RichTextField";
 import { createFieldMeta } from "@/lib/storybook-utils";

@@ -1,15 +1,16 @@
-import type { RuleDefinition, RuleAction } from "../hooks/useFormRules";
 import type {
-  RuleConditionType,
-  BaseConditionType,
-  ComplexConditionType,
-  ComparisonOperatorType,
-  DynamicValueType,
+  BaseCondition,
+  ComplexCondition,
+  ComparisonOperator,
+  DynamicValue,
+  RuleCondition,
+  Rule,
+  RuleAction,
 } from "../schemas/rule.schema";
 
 export class RuleBuilder {
-  private rules: RuleDefinition[] = [];
-  private currentRule: Partial<RuleDefinition> = {};
+  private rules: Rule[] = [];
+  private currentRule: Partial<Rule> = {};
 
   constructor(private idPrefix: string = "rule") {}
 
@@ -38,7 +39,7 @@ export class RuleBuilder {
   /**
    * Add the current rule to the collection
    */
-  addRule(rule: RuleDefinition): this {
+  addRule(rule: Rule): this {
     this.rules.push(rule);
     return this;
   }
@@ -46,21 +47,21 @@ export class RuleBuilder {
   /**
    * Build and return all rules
    */
-  build(): RuleDefinition[] {
+  build(): Rule[] {
     return [...this.rules];
   }
 
   /**
    * Get the current rule being built
    */
-  getCurrentRule(): Partial<RuleDefinition> {
+  getCurrentRule(): Partial<Rule> {
     return this.currentRule;
   }
 
   /**
    * Set the current rule
    */
-  setCurrentRule(rule: Partial<RuleDefinition>): this {
+  setCurrentRule(rule: Partial<Rule>): this {
     this.currentRule = rule;
     return this;
   }
@@ -74,55 +75,58 @@ export class RuleBuilder {
 }
 
 export class ConditionBuilder {
-  constructor(private ruleBuilder: RuleBuilder, private field: string) {}
+  constructor(
+    private ruleBuilder: RuleBuilder,
+    private field: string
+  ) {}
 
   // Comparison operators
-  equals(value: DynamicValueType): ActionBuilder {
+  equals(value: DynamicValue): ActionBuilder {
     return this.createCondition("equals", value);
   }
 
-  notEquals(value: DynamicValueType): ActionBuilder {
+  notEquals(value: DynamicValue): ActionBuilder {
     return this.createCondition("not_equals", value);
   }
 
-  greaterThan(value: DynamicValueType): ActionBuilder {
+  greaterThan(value: DynamicValue): ActionBuilder {
     return this.createCondition("greater_than", value);
   }
 
-  greaterThanOrEqual(value: DynamicValueType): ActionBuilder {
+  greaterThanOrEqual(value: DynamicValue): ActionBuilder {
     return this.createCondition("greater_than_or_equal", value);
   }
 
-  lessThan(value: DynamicValueType): ActionBuilder {
+  lessThan(value: DynamicValue): ActionBuilder {
     return this.createCondition("less_than", value);
   }
 
-  lessThanOrEqual(value: DynamicValueType): ActionBuilder {
+  lessThanOrEqual(value: DynamicValue): ActionBuilder {
     return this.createCondition("less_than_or_equal", value);
   }
 
-  contains(value: DynamicValueType): ActionBuilder {
+  contains(value: DynamicValue): ActionBuilder {
     return this.createCondition("contains", value);
   }
 
-  notContains(value: DynamicValueType): ActionBuilder {
+  notContains(value: DynamicValue): ActionBuilder {
     return this.createCondition("not_contains", value);
   }
 
-  startsWith(value: DynamicValueType): ActionBuilder {
+  startsWith(value: DynamicValue): ActionBuilder {
     return this.createCondition("starts_with", value);
   }
 
-  endsWith(value: DynamicValueType): ActionBuilder {
+  endsWith(value: DynamicValue): ActionBuilder {
     return this.createCondition("ends_with", value);
   }
 
-  in(values: DynamicValueType[]): ActionBuilder {
-    return this.createCondition("in", values as DynamicValueType);
+  in(values: DynamicValue[]): ActionBuilder {
+    return this.createCondition("in", values as DynamicValue);
   }
 
-  notIn(values: DynamicValueType[]): ActionBuilder {
-    return this.createCondition("not_in", values as DynamicValueType);
+  notIn(values: DynamicValue[]): ActionBuilder {
+    return this.createCondition("not_in", values as DynamicValue);
   }
 
   isEmpty(): ActionBuilder {
@@ -163,11 +167,11 @@ export class ConditionBuilder {
   }
 
   // Date comparison methods
-  beforeDate(date: DynamicValueType): ActionBuilder {
+  beforeDate(date: DynamicValue): ActionBuilder {
     return this.createCondition("before_date", date);
   }
 
-  afterDate(date: DynamicValueType): ActionBuilder {
+  afterDate(date: DynamicValue): ActionBuilder {
     return this.createCondition("after_date", date);
   }
 
@@ -220,18 +224,15 @@ export class ConditionBuilder {
   }
 
   // Function references
-  equalsFunction(
-    functionName: string,
-    ...args: DynamicValueType[]
-  ): ActionBuilder {
+  equalsFunction(functionName: string, ...args: DynamicValue[]): ActionBuilder {
     return this.createCondition("equals", this.functionRef(functionName, args));
   }
 
   private createCondition(
-    operator: ComparisonOperatorType,
-    value: DynamicValueType
+    operator: ComparisonOperator,
+    value: DynamicValue
   ): ActionBuilder {
-    const condition: BaseConditionType = {
+    const condition: BaseCondition = {
       field: this.field,
       operator,
       value,
@@ -260,7 +261,7 @@ export class ConditionBuilder {
     };
   }
 
-  private functionRef(name: string, args: DynamicValueType[]) {
+  private functionRef(name: string, args: DynamicValue[]) {
     return {
       type: "function" as const,
       name,
@@ -284,9 +285,8 @@ export class ActionBuilder {
    */
   hide(field: string): RuleBuilder {
     return this.addAction({
-      type: "field-visibility",
-      field,
-      visible: false,
+      type: "hide",
+      target: field,
     });
   }
 
@@ -295,9 +295,8 @@ export class ActionBuilder {
    */
   show(field: string): RuleBuilder {
     return this.addAction({
-      type: "field-visibility",
-      field,
-      visible: true,
+      type: "show",
+      target: field,
     });
   }
 
@@ -306,9 +305,9 @@ export class ActionBuilder {
    */
   require(field: string): RuleBuilder {
     return this.addAction({
-      type: "field-required",
-      field,
-      required: true,
+      type: "set_value",
+      target: field,
+      params: { required: true },
     });
   }
 
@@ -317,9 +316,9 @@ export class ActionBuilder {
    */
   makeOptional(field: string): RuleBuilder {
     return this.addAction({
-      type: "field-required",
-      field,
-      required: false,
+      type: "set_value",
+      target: field,
+      params: { required: false },
     });
   }
 
@@ -328,9 +327,8 @@ export class ActionBuilder {
    */
   disable(field: string): RuleBuilder {
     return this.addAction({
-      type: "field-disabled",
-      field,
-      disabled: true,
+      type: "disable",
+      target: field,
     });
   }
 
@@ -339,19 +337,19 @@ export class ActionBuilder {
    */
   enable(field: string): RuleBuilder {
     return this.addAction({
-      type: "field-disabled",
-      field,
-      disabled: false,
+      type: "enable",
+      target: field,
     });
   }
 
   private addAction(action: RuleAction): RuleBuilder {
     const currentRule = this.ruleBuilder.getCurrentRule();
-    const rule: RuleDefinition = {
+    const rule: Rule = {
       id: this.ruleBuilder.generateId(),
       condition: currentRule.condition!,
-      action,
+      actions: [action],
       description: currentRule.description,
+      enabled: true,
     };
 
     this.ruleBuilder.addRule(rule);
@@ -361,16 +359,18 @@ export class ActionBuilder {
 }
 
 export class FieldActionBuilder {
-  constructor(private ruleBuilder: RuleBuilder, private field: string) {}
+  constructor(
+    private ruleBuilder: RuleBuilder,
+    private field: string
+  ) {}
 
   /**
    * Show the field
    */
   show(): RuleBuilder {
     return this.addAction({
-      type: "field-visibility",
-      field: this.field,
-      visible: true,
+      type: "show",
+      target: this.field,
     });
   }
 
@@ -379,9 +379,8 @@ export class FieldActionBuilder {
    */
   hide(): RuleBuilder {
     return this.addAction({
-      type: "field-visibility",
-      field: this.field,
-      visible: false,
+      type: "hide",
+      target: this.field,
     });
   }
 
@@ -390,9 +389,9 @@ export class FieldActionBuilder {
    */
   require(): RuleBuilder {
     return this.addAction({
-      type: "field-required",
-      field: this.field,
-      required: true,
+      type: "set_value",
+      target: this.field,
+      params: { required: true },
     });
   }
 
@@ -401,9 +400,9 @@ export class FieldActionBuilder {
    */
   makeOptional(): RuleBuilder {
     return this.addAction({
-      type: "field-required",
-      field: this.field,
-      required: false,
+      type: "set_value",
+      target: this.field,
+      params: { required: false },
     });
   }
 
@@ -412,9 +411,8 @@ export class FieldActionBuilder {
    */
   disable(): RuleBuilder {
     return this.addAction({
-      type: "field-disabled",
-      field: this.field,
-      disabled: true,
+      type: "disable",
+      target: this.field,
     });
   }
 
@@ -423,19 +421,19 @@ export class FieldActionBuilder {
    */
   enable(): RuleBuilder {
     return this.addAction({
-      type: "field-disabled",
-      field: this.field,
-      disabled: false,
+      type: "enable",
+      target: this.field,
     });
   }
 
   private addAction(action: RuleAction): RuleBuilder {
     const currentRule = this.ruleBuilder.getCurrentRule();
-    const rule: RuleDefinition = {
+    const rule: Rule = {
       id: this.ruleBuilder.generateId(),
       condition: currentRule.condition!,
-      action,
+      actions: [action],
       description: currentRule.description,
+      enabled: true,
     };
 
     this.ruleBuilder.addRule(rule);
@@ -448,7 +446,7 @@ export class FieldActionBuilder {
  * Complex condition builder for AND/OR/NOT operations
  */
 export class ComplexConditionBuilder {
-  private conditions: RuleConditionType[] = [];
+  private conditions: RuleCondition[] = [];
 
   constructor(
     private ruleBuilder: RuleBuilder,
@@ -467,7 +465,7 @@ export class ComplexConditionBuilder {
    * Build the complex condition and return action builder
    */
   then(): ActionBuilder {
-    const complexCondition: ComplexConditionType = {
+    const complexCondition: ComplexCondition = {
       operator: this.operator,
       conditions: this.conditions,
     };
@@ -491,8 +489,8 @@ export const CommonRules = {
   showWhen(
     targetField: string,
     conditionField: string,
-    value: DynamicValueType
-  ): RuleDefinition {
+    value: DynamicValue
+  ): Rule {
     return RuleBuilder.when(conditionField)
       .equals(value)
       .show(targetField)
@@ -505,8 +503,8 @@ export const CommonRules = {
   hideWhen(
     targetField: string,
     conditionField: string,
-    value: DynamicValueType
-  ): RuleDefinition {
+    value: DynamicValue
+  ): Rule {
     return RuleBuilder.when(conditionField)
       .equals(value)
       .hide(targetField)
@@ -519,8 +517,8 @@ export const CommonRules = {
   requireWhen(
     targetField: string,
     conditionField: string,
-    value: DynamicValueType
-  ): RuleDefinition {
+    value: DynamicValue
+  ): Rule {
     return RuleBuilder.when(conditionField)
       .equals(value)
       .require(targetField)
@@ -533,8 +531,8 @@ export const CommonRules = {
   showFieldsWhen(
     targetFields: string[],
     conditionField: string,
-    value: DynamicValueType
-  ): RuleDefinition[] {
+    value: DynamicValue
+  ): Rule[] {
     return targetFields.map((field) =>
       CommonRules.showWhen(field, conditionField, value)
     );
@@ -545,21 +543,21 @@ export const CommonRules = {
    */
   spouseFieldsWhenMarried(
     spouseFields: string[] = ["spouseIncome", "spouseName"]
-  ): RuleDefinition[] {
+  ): Rule[] {
     return CommonRules.showFieldsWhen(spouseFields, "maritalStatus", "married");
   },
 
   /**
    * Business rule: Require phone when contact preference is phone
    */
-  requirePhoneForPhoneContact(): RuleDefinition {
+  requirePhoneForPhoneContact(): Rule {
     return CommonRules.requireWhen("phone", "contactPreference", "phone");
   },
 
   /**
    * Business rule: Show additional income fields for high earners
    */
-  additionalIncomeForHighEarners(threshold: number = 100000): RuleDefinition[] {
+  additionalIncomeForHighEarners(threshold: number = 100000): Rule[] {
     return RuleBuilder.when("annualIncome")
       .greaterThan(threshold)
       .show("additionalIncomeSource")
@@ -572,7 +570,7 @@ export const CommonRules = {
   /**
    * Business rule: Validate email format
    */
-  requireValidEmail(emailField: string = "email"): RuleDefinition {
+  requireValidEmail(emailField: string = "email"): Rule {
     return RuleBuilder.when(emailField)
       .hasEmailFormat()
       .show(emailField)
@@ -582,7 +580,7 @@ export const CommonRules = {
   /**
    * Business rule: Weekend-specific rules
    */
-  weekendOnlyPromotion(promoField: string): RuleDefinition {
+  weekendOnlyPromotion(promoField: string): Rule {
     return RuleBuilder.when("currentDate")
       .isWeekend()
       .show(promoField)
@@ -592,7 +590,7 @@ export const CommonRules = {
   /**
    * Business rule: Age-based field visibility
    */
-  adultOnlyFields(ageField: string, targetFields: string[]): RuleDefinition[] {
+  adultOnlyFields(ageField: string, targetFields: string[]): Rule[] {
     return targetFields.map(
       (field) =>
         RuleBuilder.when(ageField).greaterThanOrEqual(18).show(field).build()[0]
@@ -602,7 +600,7 @@ export const CommonRules = {
   /**
    * Business rule: Password strength requirements
    */
-  strongPasswordRequired(passwordField: string): RuleDefinition {
+  strongPasswordRequired(passwordField: string): Rule {
     return RuleBuilder.when(passwordField)
       .lengthGreaterThan(8)
       .require(passwordField)
@@ -612,7 +610,7 @@ export const CommonRules = {
   /**
    * Business rule: Credit card validation
    */
-  creditCardValidation(cardField: string): RuleDefinition {
+  creditCardValidation(cardField: string): Rule {
     return RuleBuilder.when(cardField)
       .hasCreditCardFormat()
       .enable("submitButton")
@@ -631,8 +629,8 @@ export const RuleTestUtils = {
     id: string,
     field: string,
     conditionField: string,
-    value: any
-  ): RuleDefinition {
+    value: DynamicValue
+  ): Rule {
     return {
       id,
       condition: {
@@ -640,18 +638,20 @@ export const RuleTestUtils = {
         operator: "equals",
         value,
       },
-      action: {
-        type: "field-visibility",
-        field,
-        visible: true,
-      },
+      actions: [
+        {
+          type: "show",
+          target: field,
+        },
+      ],
+      enabled: true,
     };
   },
 
   /**
    * Create a batch of test rules
    */
-  createTestRules(): RuleDefinition[] {
+  createTestRules(): Rule[] {
     return [
       ...CommonRules.spouseFieldsWhenMarried(),
       CommonRules.requirePhoneForPhoneContact(),
@@ -662,12 +662,12 @@ export const RuleTestUtils = {
   /**
    * Validate rule definition
    */
-  validateRule(rule: RuleDefinition): { valid: boolean; errors: string[] } {
+  validateRule(rule: Rule): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
 
     if (!rule.id) errors.push("Rule must have an ID");
     if (!rule.condition) errors.push("Rule must have a condition");
-    if (!rule.action) errors.push("Rule must have an action");
+    if (!rule.actions) errors.push("Rule must have actions");
 
     if (
       rule.condition &&
@@ -676,8 +676,8 @@ export const RuleTestUtils = {
       errors.push("Condition must have either 'field' or 'conditions'");
     }
 
-    if (rule.action && !rule.action.type) {
-      errors.push("Action must have a type");
+    if (rule.actions && !rule.actions.length) {
+      errors.push("Rule must have at least one action");
     }
 
     return {

@@ -19,6 +19,7 @@ interface DateTimeFieldProps {
   label: string;
   description?: string;
   metadata: FieldMetadata;
+  disabled?: boolean;
 }
 
 export function DateTimeField({
@@ -27,6 +28,7 @@ export function DateTimeField({
   label,
   description,
   metadata,
+  disabled = false,
 }: DateTimeFieldProps) {
   const formContext = useFormContext();
 
@@ -57,6 +59,7 @@ export function DateTimeField({
                 type="datetime-local"
                 placeholder={placeholder || label}
                 aria-describedby={descriptionId}
+                disabled={disabled}
                 {...field}
                 value={field.value || ""}
               />

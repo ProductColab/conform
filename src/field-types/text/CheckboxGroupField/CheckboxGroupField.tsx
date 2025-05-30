@@ -19,6 +19,7 @@ interface CheckboxGroupFieldProps {
   label: string;
   description?: string;
   metadata: FieldMetadata;
+  disabled?: boolean;
 }
 
 export function CheckboxGroupField({
@@ -27,6 +28,7 @@ export function CheckboxGroupField({
   required,
   label,
   description,
+  disabled = false,
 }: CheckboxGroupFieldProps) {
   const formContext = useFormContext();
 
@@ -94,6 +96,7 @@ export function CheckboxGroupField({
                         onChange={(e) =>
                           handleCheckboxChange(optionValue, e.target.checked)
                         }
+                        disabled={disabled}
                         className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         aria-describedby={
                           description ? `${name}-description` : undefined

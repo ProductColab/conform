@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, within } from "@storybook/test";
 import { TextareaField } from "./TextareaField";
 import {
@@ -11,6 +11,7 @@ import {
   playFunctions,
 } from "@/lib/storybook-utils";
 import { FieldPresets } from "@/utils/field-presets";
+import { extractMetadata } from "@/utils";
 
 const meta: Meta<typeof TextareaField> = {
   ...createFieldMeta("text/TextareaField", TextareaField),
@@ -160,8 +161,8 @@ export const BlogPost: Story = {
   args: createStoryArgs({
     label: "Article Content",
     name: "articleContent",
-    property: mockSchemas.string,
-    metadata: FieldPresets.textarea,
+    property: FieldPresets.textarea,
+    metadata: extractMetadata(FieldPresets.textarea),
   }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);

@@ -1,5 +1,6 @@
 import { z } from "zod/v4";
 import type { FieldMetadata } from "../schemas/field.schema";
+import { FieldRegistry } from "../field-registry";
 import {
   extractMetadata,
   getFieldLabel as extractFieldLabel,
@@ -12,9 +13,55 @@ import {
 export const fieldMeta = (metadata: FieldMetadata): FieldMetadata => metadata;
 
 /**
+ * Create a field with metadata using Zod v4 registry system
+ * This is the primary API for creating fields in Conform
+ *
+ * @example
+ * ```tsx
+ * import { createField } from "conform";
+ *
+ * const emailField = createField(
+ *   z.string().email(),
+ *   {
+ *     inputType: "email",
+ *     placeholder: "user@example.com"
+ *   }
+ * );
+ * ```
+ */
+export function createField<T extends z.ZodTypeAny>(
+  schema: T,
+  metadata: FieldMetadata
+): T {
+  // Register the schema with its metadata in our registry
+  FieldRegistry.add(schema, metadata);
+  return schema;
+}
+
+/**
  * Type definition for user field schema definitions - following established pattern
  */
 export type FieldSchemas = Record<string, z.core.JSONSchema.Schema>;
+
+/**
+ * Information extracted from a field schema
+ */
+export interface FieldInfo {
+  name: string;
+  schema: z.core.JSONSchema.Schema;
+  label: string;
+  description: string | undefined;
+  metadata: FieldMetadata;
+  type: string;
+}
+
+/**
+ * Category metadata for organizing fields
+ */
+export interface CategoryMeta {
+  order: number;
+  label: string;
+}
 
 /**
  * Extract field information from a schema following the established pattern
@@ -22,7 +69,7 @@ export type FieldSchemas = Record<string, z.core.JSONSchema.Schema>;
 export function extractFieldInfo(
   name: string,
   schema: z.core.JSONSchema.Schema
-) {
+): FieldInfo {
   return {
     name,
     schema,
@@ -37,7 +84,10 @@ export function extractFieldInfo(
  * Auto-categorize fields by type - no user category required!
  */
 export function getFieldsByCategory(schemas: FieldSchemas) {
-  const result: Record<string, { meta: any; fields: Record<string, any> }> = {};
+  const result: Record<
+    string,
+    { meta: CategoryMeta; fields: Record<string, FieldInfo> }
+  > = {};
 
   // Auto-organize by field type - much simpler for users!
   Object.entries(schemas).forEach(([fieldName, schema]) => {
@@ -70,8 +120,8 @@ export function getFieldsByCategory(schemas: FieldSchemas) {
 
       result[category] = {
         meta: {
-          label: categoryLabels[category] || "Other Fields",
           order: Object.keys(result).length,
+          label: categoryLabels[category] || "Other Fields",
         },
         fields: {},
       };
@@ -90,7 +140,7 @@ export function getFieldsFlat(schemas: FieldSchemas) {
   return Object.entries(schemas).reduce((acc, [fieldName, schema]) => {
     acc[fieldName] = extractFieldInfo(fieldName, schema);
     return acc;
-  }, {} as Record<string, any>);
+  }, {} as Record<string, FieldInfo>);
 }
 
 /**
@@ -98,11 +148,11 @@ export function getFieldsFlat(schemas: FieldSchemas) {
  */
 export function getFieldsForType(schemas: FieldSchemas, fieldType: string) {
   return Object.entries(schemas)
-    .filter(([_, schema]) => schema.type === fieldType)
+    .filter(([, schema]) => schema.type === fieldType)
     .reduce((acc, [fieldName, schema]) => {
       acc[fieldName] = extractFieldInfo(fieldName, schema);
       return acc;
-    }, {} as Record<string, any>);
+    }, {} as Record<string, FieldInfo>);
 }
 
 /**

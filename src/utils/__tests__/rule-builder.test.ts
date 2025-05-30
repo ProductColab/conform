@@ -17,11 +17,13 @@ describe("RuleBuilder", () => {
           operator: "equals",
           value: "married",
         },
-        action: {
-          type: "field-visibility",
-          field: "spouseIncome",
-          visible: true,
-        },
+        actions: [
+          {
+            type: "show",
+            target: "spouseIncome",
+          },
+        ],
+        enabled: true,
       });
     });
 
@@ -279,7 +281,11 @@ describe("RuleBuilder", () => {
         .enable("submitButton")
         .build();
 
-      const condition = rules[0].condition as any;
+      const condition = rules[0].condition as {
+        field: string;
+        operator: string;
+        value: unknown;
+      };
       expect(condition.value).toEqual({
         type: "field",
         fieldName: "confirmPassword",
@@ -293,7 +299,11 @@ describe("RuleBuilder", () => {
         .show("adminPanel")
         .build();
 
-      const condition = rules[0].condition as any;
+      const condition = rules[0].condition as {
+        field: string;
+        operator: string;
+        value: unknown;
+      };
       expect(condition.value).toEqual({
         type: "context",
         key: "user.role",
@@ -306,7 +316,11 @@ describe("RuleBuilder", () => {
         .show("discountApplied")
         .build();
 
-      const condition = rules[0].condition as any;
+      const condition = rules[0].condition as {
+        field: string;
+        operator: string;
+        value: unknown;
+      };
       expect(condition.value).toEqual({
         type: "function",
         name: "calculateTotal",
@@ -337,22 +351,23 @@ describe("RuleBuilder", () => {
         .disable("disabledField")
         .build();
 
-      const actionTypes = rules.map((rule) => rule.action.type);
+      const actionTypes = rules.map((rule) => rule.actions[0].type);
       expect(actionTypes).toEqual([
-        "field-visibility",
-        "field-visibility",
-        "field-required",
-        "field-required",
-        "field-disabled",
-        "field-disabled",
+        "show",
+        "hide",
+        "set_value",
+        "set_value",
+        "enable",
+        "disable",
       ]);
 
-      const actionValues = rules.map((rule) => {
-        if (rule.action.type === "field-visibility") return rule.action.visible;
-        if (rule.action.type === "field-required") return rule.action.required;
-        if (rule.action.type === "field-disabled") return rule.action.disabled;
-      });
-      expect(actionValues).toEqual([true, false, true, false, false, true]);
+      // Check that show/hide actions have correct target
+      expect(rules[0].actions[0].target).toBe("showField");
+      expect(rules[1].actions[0].target).toBe("hideField");
+
+      // Check that require/optional actions have params
+      expect(rules[2].actions[0].params).toEqual({ required: true });
+      expect(rules[3].actions[0].params).toEqual({ required: false });
     });
   });
 });
@@ -372,12 +387,11 @@ describe("CommonRules", () => {
           operator: "equals",
           value: "married",
         });
-        expect(rule.action.type).toBe("field-visibility");
-        expect(rule.action.visible).toBe(true);
+        expect(rule.actions[0].type).toBe("show");
       });
 
-      expect(rules[0].action.field).toBe("spouseName");
-      expect(rules[1].action.field).toBe("spouseIncome");
+      expect(rules[0].actions[0].target).toBe("spouseName");
+      expect(rules[1].actions[0].target).toBe("spouseIncome");
     });
 
     it("should create phone requirement rule", () => {
@@ -388,10 +402,10 @@ describe("CommonRules", () => {
         operator: "equals",
         value: "phone",
       });
-      expect(rule.action).toEqual({
-        type: "field-required",
-        field: "phone",
-        required: true,
+      expect(rule.actions[0]).toEqual({
+        type: "set_value",
+        target: "phone",
+        params: { required: true },
       });
     });
 
@@ -405,8 +419,7 @@ describe("CommonRules", () => {
           operator: "greater_than",
           value: 75000,
         });
-        expect(rule.action.type).toBe("field-visibility");
-        expect(rule.action.visible).toBe(true);
+        expect(rule.actions[0].type).toBe("show");
       });
     });
   });
@@ -420,7 +433,7 @@ describe("CommonRules", () => {
         operator: "email_format",
         value: null,
       });
-      expect(rule.action.type).toBe("field-visibility");
+      expect(rule.actions[0].type).toBe("show");
     });
 
     it("should create weekend promotion rule", () => {
@@ -431,7 +444,7 @@ describe("CommonRules", () => {
         operator: "is_weekend",
         value: null,
       });
-      expect(rule.action.field).toBe("weekendDeal");
+      expect(rule.actions[0].target).toBe("weekendDeal");
     });
 
     it("should create adult-only fields rule", () => {
@@ -458,7 +471,7 @@ describe("CommonRules", () => {
         operator: "length_greater_than",
         value: 8,
       });
-      expect(rule.action.type).toBe("field-required");
+      expect(rule.actions[0].type).toBe("set_value");
     });
 
     it("should create credit card validation rule", () => {
@@ -469,10 +482,9 @@ describe("CommonRules", () => {
         operator: "credit_card_format",
         value: null,
       });
-      expect(rule.action).toEqual({
-        type: "field-disabled",
-        field: "submitButton",
-        disabled: false,
+      expect(rule.actions[0]).toEqual({
+        type: "enable",
+        target: "submitButton",
       });
     });
   });
@@ -486,10 +498,9 @@ describe("CommonRules", () => {
         operator: "equals",
         value: "value",
       });
-      expect(rule.action).toEqual({
-        type: "field-visibility",
-        field: "targetField",
-        visible: true,
+      expect(rule.actions[0]).toEqual({
+        type: "show",
+        target: "targetField",
       });
     });
 
@@ -500,8 +511,8 @@ describe("CommonRules", () => {
         "value"
       );
 
-      expect(rule.action.type).toBe("field-required");
-      expect(rule.action.required).toBe(true);
+      expect(rule.actions[0].type).toBe("set_value");
+      expect(rule.actions[0].params).toEqual({ required: true });
     });
 
     it("should create multiple field rules", () => {
@@ -512,8 +523,8 @@ describe("CommonRules", () => {
       );
 
       expect(rules).toHaveLength(2);
-      expect(rules[0].action.field).toBe("field1");
-      expect(rules[1].action.field).toBe("field2");
+      expect(rules[0].actions[0].target).toBe("field1");
+      expect(rules[1].actions[0].target).toBe("field2");
     });
   });
 });
@@ -534,11 +545,13 @@ describe("RuleTestUtils", () => {
         operator: "equals",
         value: "testValue",
       },
-      action: {
-        type: "field-visibility",
-        field: "targetField",
-        visible: true,
-      },
+      actions: [
+        {
+          type: "show",
+          target: "targetField",
+        },
+      ],
+      enabled: true,
     });
   });
 
@@ -549,7 +562,7 @@ describe("RuleTestUtils", () => {
     rules.forEach((rule) => {
       expect(rule).toHaveProperty("id");
       expect(rule).toHaveProperty("condition");
-      expect(rule).toHaveProperty("action");
+      expect(rule).toHaveProperty("actions");
     });
   });
 
@@ -561,11 +574,13 @@ describe("RuleTestUtils", () => {
         operator: "equals" as const,
         value: "value",
       },
-      action: {
-        type: "field-visibility" as const,
-        field: "target",
-        visible: true,
-      },
+      actions: [
+        {
+          type: "show" as const,
+          target: "targetField",
+        },
+      ],
+      enabled: true,
     };
 
     const result = RuleTestUtils.validateRule(validRule);
@@ -575,22 +590,19 @@ describe("RuleTestUtils", () => {
 
   it("should detect invalid rule definitions", () => {
     const invalidRule = {
-      // Missing id
+      // Missing id and actions
       condition: {
         field: "test",
         operator: "equals" as const,
         value: "value",
       },
-      action: {
-        // Missing type
-        field: "target",
-        visible: true,
-      },
-    } as any;
+      enabled: true,
+    };
 
+    // @ts-expect-error - intentionally invalid rule for testing
     const result = RuleTestUtils.validateRule(invalidRule);
     expect(result.valid).toBe(false);
     expect(result.errors).toContain("Rule must have an ID");
-    expect(result.errors).toContain("Action must have a type");
+    expect(result.errors).toContain("Rule must have actions");
   });
 });
