@@ -12,7 +12,7 @@ class Logger {
   }
 
   private get isVerbose() {
-    return this.options.verbose || process.env.CONFORM_VERBOSE === "true";
+    return this.options.verbose || process.env.ZODIAC_VERBOSE === "true";
   }
 
   info(message: string, ...args: unknown[]) {

@@ -35,7 +35,7 @@ describe("CLI Templates", () => {
     if (typeof packageJson === "function") {
       const generated = packageJson(context);
       expect(generated).toContain('"name": "test-app"');
-      expect(generated).toContain('"conform": "latest"');
+      expect(generated).toContain('"zodiac": "latest"');
       expect(generated).toContain('"zod"');
     }
 
@@ -43,7 +43,7 @@ describe("CLI Templates", () => {
     if (typeof readme === "function") {
       const generated = readme(context);
       expect(generated).toContain("# test-app");
-      expect(generated).toContain("A Conform-powered React application");
+      expect(generated).toContain("A zodiac-powered React application");
     }
   });
 
@@ -57,7 +57,7 @@ describe("CLI Templates", () => {
 
     const appTsx = template.files["src/App.tsx"];
     expect(typeof appTsx).toBe("string");
-    expect(appTsx).toContain("conform.form()");
+    expect(appTsx).toContain("zodiac.form()");
     expect(appTsx).toContain("field.text");
     expect(appTsx).toContain("field.email");
 
@@ -124,7 +124,7 @@ describe("CLI Templates", () => {
 
       const parsed = JSON.parse(generated);
       expect(parsed.name).toBe("test-app");
-      expect(parsed.dependencies.conform).toBeDefined();
+      expect(parsed.dependencies.zodiac).toBeDefined();
       expect(parsed.dependencies.zod).toBeDefined();
       expect(parsed.dependencies.react).toBeDefined();
     }

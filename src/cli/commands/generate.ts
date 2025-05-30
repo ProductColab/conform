@@ -40,12 +40,12 @@ export const generateCommand = new Command("generate")
 generateCommand.on("--help", () => {
   console.log("");
   console.log("Examples:");
-  console.log("  $ conform generate schema Contact");
+  console.log("  $ zodiac generate schema Contact");
   console.log(
-    "  $ conform generate field email --output src/schemas/contact.ts"
+    "  $ zodiac generate field email --output src/schemas/contact.ts"
   );
-  console.log("  $ conform generate form Contact");
-  console.log("  $ conform generate --interactive");
+  console.log("  $ zodiac generate form Contact");
+  console.log("  $ zodiac generate --interactive");
   console.log("");
   console.log("Generation Types:");
   console.log("  schema     Generate a new Zod schema with fields");
@@ -63,7 +63,7 @@ async function runInteractiveMode(
   generator: CodeGenerator,
   options?: GenerateOptions
 ) {
-  logger.info("🚀 Welcome to Conform Interactive Generator!");
+  logger.info("🚀 Welcome to zodiac Interactive Generator!");
 
   const { action } = await inquirer.prompt([
     {
@@ -243,7 +243,7 @@ async function generateSchemaInteractive(
   logger.info("🎉 Schema generation complete!");
   logger.info(`📁 Generated: ${outputPath}`);
   logger.info(`💡 Next steps:`);
-  logger.info(`   conform generate form ${name}`);
+  logger.info(`   zodiac generate form ${name}`);
 }
 
 async function addFieldInteractive(
@@ -256,7 +256,7 @@ async function addFieldInteractive(
 
   if (schemaFiles.length === 0) {
     logger.error(
-      "No schema files found. Generate a schema first with 'conform generate schema'"
+      "No schema files found. Generate a schema first with 'zodiac generate schema'"
     );
     process.exit(1);
   }

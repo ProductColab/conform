@@ -1,10 +1,10 @@
 {
-  "name": "conform",
+  "name": "zodiac",
   "private": false,
   "version": "0.0.0",
   "type": "module",
   "bin": {
-    "conform": "./dist/cli/index.js"
+    "zodiac": "./dist/cli/index.js"
   },
   "files": [
     "dist",

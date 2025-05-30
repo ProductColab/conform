@@ -71,7 +71,7 @@ export function generateFullCode(
 
   // Handle simple conditions only for now
   if (!rule.condition || typeof rule.condition !== "object") {
-    return `import { field } from '@conform/rule-builder';
+    return `import { field } from '@zodiac/rule-builder';
 
 // Configure a complete rule to see generated code`;
   }
@@ -89,7 +89,7 @@ export function generateFullCode(
         rule.condition.value === null ||
         rule.condition.value === undefined))
   ) {
-    return `import { field } from '@conform/rule-builder';
+    return `import { field } from '@zodiac/rule-builder';
 
 // Configure a complete rule to see generated code`;
   }
@@ -107,7 +107,7 @@ export function generateFullCode(
         rule.condition.value === null ||
         rule.condition.value === undefined))
   ) {
-    return `import { field } from '@conform/rule-builder';
+    return `import { field } from '@zodiac/rule-builder';
 
 // Complex conditions not yet supported in preview`;
   }
@@ -115,7 +115,7 @@ export function generateFullCode(
   const { field: fieldName, operator, value } = rule.condition;
   const actions = rule.actions || [];
 
-  let code = `import { field } from '@conform/rule-builder';
+  let code = `import { field } from '@zodiac/rule-builder';
 
 `;
 
@@ -246,7 +246,7 @@ export function generateFieldCode(field: {
 export function generateFluentCode(rule: Rule): string {
   // Handle simple conditions only for now
   if (!rule.condition || typeof rule.condition !== "object") {
-    return `import { field } from '@conform/rule-builder';
+    return `import { field } from '@zodiac/rule-builder';
 
 // Select a field, operator, and value to see generated code`;
   }
@@ -264,7 +264,7 @@ export function generateFluentCode(rule: Rule): string {
         rule.condition.value === null ||
         rule.condition.value === undefined))
   ) {
-    return `import { field } from '@conform/rule-builder';
+    return `import { field } from '@zodiac/rule-builder';
 
 // Select a field, operator, and value to see generated code`;
   }
@@ -354,7 +354,7 @@ export function generateFluentCode(rule: Rule): string {
   }
 
   // Build final code with imports
-  const importStatement = `import { ${imports.join(", ")} } from '@conform/rule-builder';`;
+  const importStatement = `import { ${imports.join(", ")} } from '@zodiac/rule-builder';`;
 
   return `${importStatement}
 

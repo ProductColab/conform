@@ -229,7 +229,7 @@ const ruleBuilderAssertions = {
     expectedImports: string[]
   ) => {
     const codeElement = canvas.getByRole("code");
-    const importLine = `import { ${expectedImports.join(", ")} } from '@conform/rule-builder'`;
+    const importLine = `import { ${expectedImports.join(", ")} } from '@zodiac/rule-builder'`;
     expect(codeElement).toHaveTextContent(importLine);
   },
 
@@ -787,7 +787,7 @@ export const Interactive: Story = {
 
 The generated code will be:
 \`\`\`typescript
-import { field, showMessage } from '@conform/rule-builder';
+import { field, showMessage } from '@zodiac/rule-builder';
 
 const rule = field('email').equals('test@example.com')
   .then(() => showMessage('Valid email!'));

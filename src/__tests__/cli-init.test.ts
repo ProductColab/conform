@@ -68,11 +68,11 @@ describe("Init Command Execution", () => {
   });
 
   it("should log project creation messages", () => {
-    logger.info("🎯 Creating Conform project: test-project");
+    logger.info("🎯 Creating zodiac project: test-project");
     logger.success("🎉 Project created successfully!");
 
     expect(logger.info).toHaveBeenCalledWith(
-      "🎯 Creating Conform project: test-project"
+      "🎯 Creating zodiac project: test-project"
     );
     expect(logger.success).toHaveBeenCalledWith(
       "🎉 Project created successfully!"
@@ -190,7 +190,7 @@ describe("Init Command Execution", () => {
         {
           name: context.projectName,
           dependencies: {
-            conform: "latest",
+            zodiac: "latest",
             react: "^18.0.0",
           },
         },
@@ -203,7 +203,7 @@ describe("Init Command Execution", () => {
     const result = templateFunction(context);
 
     expect(result).toContain('"name": "my-app"');
-    expect(result).toContain('"conform": "latest"');
+    expect(result).toContain('"zodiac": "latest"');
 
     // Test static content
     const staticContent = "import React from 'react';";

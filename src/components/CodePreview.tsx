@@ -15,7 +15,7 @@ export const CodePreview: React.FC<CodePreviewProps> = ({ rule }) => {
       return generateFluentCode(rule);
     }
 
-    return `import { field } from '@conform/rule-builder';
+    return `import { field } from '@zodiac/rule-builder';
 
 // Select a field, operator, and value to see generated code`;
   })();

@@ -14,7 +14,7 @@ interface InitOptions {
 }
 
 export const initCommand = new Command("init")
-  .description("Initialize a new Conform project")
+  .description("Initialize a new zodiac project")
   .argument("<project-name>", "Name of the project to create")
   .option("-t, --template <template>", "Project template", "react-ts")
   .option("-f, --force", "Overwrite existing directory", false)
@@ -33,9 +33,9 @@ export const initCommand = new Command("init")
 initCommand.on("--help", () => {
   console.log("");
   console.log(chalk.bold("Examples:"));
-  console.log("  $ conform init my-form-app");
-  console.log("  $ conform init my-app --template nextjs");
-  console.log("  $ conform init my-app --no-typescript --no-install");
+  console.log("  $ zodiac init my-form-app");
+  console.log("  $ zodiac init my-app --template nextjs");
+  console.log("  $ zodiac init my-app --no-typescript --no-install");
   console.log("");
   console.log(chalk.bold("Available templates:"));
   console.log("  react-ts      React with TypeScript (default)");
@@ -48,7 +48,7 @@ initCommand.on("--help", () => {
 async function initProject(projectName: string, options: InitOptions) {
   const projectPath = join(process.cwd(), projectName);
 
-  logger.info(`🎯 Creating Conform project: ${chalk.cyan(projectName)}`);
+  logger.info(`🎯 Creating zodiac project: ${chalk.cyan(projectName)}`);
 
   // Check if directory exists
   if (existsSync(projectPath) && !options.force) {
@@ -110,8 +110,8 @@ async function initProject(projectName: string, options: InitOptions) {
   console.log("  npm run dev");
   console.log("");
   console.log(chalk.bold("Learn more:"));
-  console.log("  $ conform generate --help");
-  console.log("  $ conform docs --help");
+  console.log("  $ zodiac generate --help");
+  console.log("  $ zodiac docs --help");
 }
 
 async function generateProjectFiles(

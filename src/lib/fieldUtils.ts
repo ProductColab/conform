@@ -14,11 +14,11 @@ export const fieldMeta = (metadata: FieldMetadata): FieldMetadata => metadata;
 
 /**
  * Create a field with metadata using Zod v4 registry system
- * This is the primary API for creating fields in Conform
+ * This is the primary API for creating fields in zodiac
  *
  * @example
  * ```tsx
- * import { createField } from "conform";
+ * import { createField } from "zodiac";
  *
  * const emailField = createField(
  *   z.string().email(),
@@ -137,10 +137,13 @@ export function getFieldsByCategory(schemas: FieldSchemas) {
  * Get a simple flat list of fields - for when categorization isn't needed
  */
 export function getFieldsFlat(schemas: FieldSchemas) {
-  return Object.entries(schemas).reduce((acc, [fieldName, schema]) => {
-    acc[fieldName] = extractFieldInfo(fieldName, schema);
-    return acc;
-  }, {} as Record<string, FieldInfo>);
+  return Object.entries(schemas).reduce(
+    (acc, [fieldName, schema]) => {
+      acc[fieldName] = extractFieldInfo(fieldName, schema);
+      return acc;
+    },
+    {} as Record<string, FieldInfo>
+  );
 }
 
 /**
@@ -149,10 +152,13 @@ export function getFieldsFlat(schemas: FieldSchemas) {
 export function getFieldsForType(schemas: FieldSchemas, fieldType: string) {
   return Object.entries(schemas)
     .filter(([, schema]) => schema.type === fieldType)
-    .reduce((acc, [fieldName, schema]) => {
-      acc[fieldName] = extractFieldInfo(fieldName, schema);
-      return acc;
-    }, {} as Record<string, FieldInfo>);
+    .reduce(
+      (acc, [fieldName, schema]) => {
+        acc[fieldName] = extractFieldInfo(fieldName, schema);
+        return acc;
+      },
+      {} as Record<string, FieldInfo>
+    );
 }
 
 /**

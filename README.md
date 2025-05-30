@@ -1,8 +1,8 @@
-# Conform
+# zodiac
 
 Dynamic schema-driven forms for React with visual rule building.
 
-[![npm version](https://img.shields.io/npm/v/conform.svg)](https://www.npmjs.com/package/conform)
+[![npm version](https://img.shields.io/npm/v/zodiac.svg)](https://www.npmjs.com/package/zodiac)
 [![TypeScript](https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg)](http://www.typescriptlang.org/)
 
 ## Features
@@ -16,15 +16,15 @@ Dynamic schema-driven forms for React with visual rule building.
 ## Quick Start
 
 ```bash
-npm install conform
+npm install zodiac
 ```
 
 ### Simple Form
 
 ```tsx
-import { conform, field } from "conform";
+import { zodiac, field } from "zodiac";
 
-const userForm = conform.form({
+const userForm = zodiac.form({
   name: field.text({ placeholder: "Full name" }),
   email: field.email(),
   age: field.slider({ min: 18, max: 100 }),
@@ -43,7 +43,7 @@ function App() {
 
 ```tsx
 import { z } from "zod";
-import { SchemaForm } from "conform";
+import { SchemaForm } from "zodiac";
 
 const schema = z.object({
   name: z.string().min(1),
@@ -69,12 +69,12 @@ graph LR
   D --> G[React Form]
 ```
 
-Conform uses Zod v4's JSON Schema conversion and registry system to separate form structure from UI metadata, enabling clean schemas with rich form capabilities.
+zodiac uses Zod v4's JSON Schema conversion and registry system to separate form structure from UI metadata, enabling clean schemas with rich form capabilities.
 
 ## Field Types
 
 ```tsx
-const form = conform.form({
+const form = zodiac.form({
   // Text inputs
   email: field.email(),
   password: field.password(),
@@ -107,7 +107,7 @@ const form = conform.form({
 ### Visual Rule Builder
 
 ```tsx
-import { RuleBuilder } from "conform";
+import { RuleBuilder } from "zodiac";
 
 const fields = {
   accountType: { type: "string", options: ["personal", "business"] },
@@ -134,29 +134,29 @@ const rules = [
 
 ```bash
 # Install CLI
-npm install -g conform
+npm install -g zodiac
 
 # Create new project
-conform init my-app --template nextjs
+zodiac init my-app --template nextjs
 
 # Generate components
-conform generate contact-form
+zodiac generate contact-form
 
 # Generate documentation
-conform docs --watch --open
+zodiac docs --watch --open
 
 # Validate schemas
-conform validate src/
+zodiac validate src/
 ```
 
 ## API Reference
 
-### conform.form(fields)
+### zodiac.form(fields)
 
 Creates a form with the streamlined API.
 
 ```tsx
-const form = conform.form({
+const form = zodiac.form({
   name: field.text(),
   email: field.email(),
 });

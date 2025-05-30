@@ -35,7 +35,7 @@ function generateDocs(options: {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Conform Documentation</title>
+    <title>zodiac Documentation</title>
     <style>
         body { font-family: system-ui, sans-serif; max-width: 1200px; margin: 0 auto; padding: 2rem; }
         .field { border: 1px solid #e5e5e5; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
@@ -45,7 +45,7 @@ function generateDocs(options: {
     </style>
 </head>
 <body>
-    <h1>🎯 Conform Field Documentation</h1>
+    <h1>🎯 zodiac Field Documentation</h1>
     <p>Auto-generated documentation from your field registry.</p>
     <div class="field">
         <div class="field-header">Email Field</div>
@@ -59,7 +59,7 @@ function generateDocs(options: {
 </body>
 </html>`;
   } else if (options.format === "markdown") {
-    return `# Conform Field Documentation
+    return `# zodiac Field Documentation
 
 Auto-generated documentation from your field registry.
 
@@ -76,7 +76,7 @@ Auto-generated documentation from your field registry.
   } else {
     return JSON.stringify(
       {
-        title: "Conform Field Documentation",
+        title: "zodiac Field Documentation",
         fields: {
           email: {
             type: "string",
@@ -112,12 +112,12 @@ export const docsCommand = new Command("docs")
 docsCommand.on("--help", () => {
   console.log("");
   console.log(chalk.bold("Examples:"));
-  console.log("  $ conform docs");
-  console.log("  $ conform docs --format markdown --output ./docs");
+  console.log("  $ zodiac docs");
+  console.log("  $ zodiac docs --format markdown --output ./docs");
   console.log(
-    '  $ conform docs --include "src/**/*.ts" --exclude "**/*.test.ts"'
+    '  $ zodiac docs --include "src/**/*.ts" --exclude "**/*.test.ts"'
   );
-  console.log("  $ conform docs --watch --open");
+  console.log("  $ zodiac docs --watch --open");
   console.log("");
   console.log(chalk.bold("Features:"));
   console.log("  • Auto-discovers registered fields from your codebase");
@@ -127,7 +127,7 @@ docsCommand.on("--help", () => {
   console.log("");
   console.log(chalk.bold("Registry Integration:"));
   console.log(
-    "  The docs command leverages Conform's registry system to automatically"
+    "  The docs command leverages zodiac's registry system to automatically"
   );
   console.log(
     "  discover all fields created with field.* builders and their metadata."

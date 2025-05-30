@@ -228,9 +228,9 @@ export const field = {
 };
 
 /**
- * Main conform API - single entry point for creating forms
+ * Main zodiac API - single entry point for creating forms
  */
-export const conform = {
+export const zodiac = {
   /**
    * Create a form with a fluent schema definition
    */
@@ -259,7 +259,7 @@ export const conform = {
   quick: {
     // Common form patterns
     contact: () =>
-      conform.form({
+      zodiac.form({
         name: field.text({ placeholder: "Full Name" }),
         email: field.email(),
         phone: field.phone(),
@@ -267,7 +267,7 @@ export const conform = {
       }),
 
     signup: () =>
-      conform.form({
+      zodiac.form({
         firstName: field.text({ placeholder: "First Name" }),
         lastName: field.text({ placeholder: "Last Name" }),
         email: field.email(),
@@ -276,7 +276,7 @@ export const conform = {
       }),
 
     profile: () =>
-      conform.form({
+      zodiac.form({
         name: field.text({ placeholder: "Display Name" }),
         email: field.email(),
         bio: field.textarea({ placeholder: "Tell us about yourself..." }),
@@ -285,7 +285,7 @@ export const conform = {
       }),
 
     survey: () =>
-      conform.form({
+      zodiac.form({
         satisfaction: field.rating(5, { icon: "star" }),
         recommendation: field.slider({ min: 0, max: 10 }),
         category: field.select(["product", "service", "support", "other"]),
@@ -298,4 +298,4 @@ export const conform = {
   field,
 };
 
-export default conform;
+export default zodiac;

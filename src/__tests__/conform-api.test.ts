@@ -1,8 +1,8 @@
 import { expect, it, describe } from "vitest";
-import { conform, field } from "../lib/conform";
+import { zodiac, field } from "../lib/zodiac";
 import { FieldRegistry } from "../field-registry";
 
-describe("Conform Streamlined API", () => {
+describe("zodiac Streamlined API", () => {
   it("should create fields with the field builders", () => {
     const emailField = field.email();
     const passwordField = field.password();
@@ -27,8 +27,8 @@ describe("Conform Streamlined API", () => {
     expect(sliderMeta?.step).toBe(1);
   });
 
-  it("should create a form with the conform.form() API", () => {
-    const form = conform.form({
+  it("should create a form with the zodiac.form() API", () => {
+    const form = zodiac.form({
       email: field.email(),
       password: field.password(),
       age: field.slider({ min: 18, max: 100 }),
@@ -54,16 +54,16 @@ describe("Conform Streamlined API", () => {
   });
 
   it("should work with quick form patterns", () => {
-    const contactForm = conform.quick.contact();
+    const contactForm = zodiac.quick.contact();
     expect(contactForm.schema).toBeDefined();
 
-    const signupForm = conform.quick.signup();
+    const signupForm = zodiac.quick.signup();
     expect(signupForm.schema).toBeDefined();
 
-    const profileForm = conform.quick.profile();
+    const profileForm = zodiac.quick.profile();
     expect(profileForm.schema).toBeDefined();
 
-    const surveyForm = conform.quick.survey();
+    const surveyForm = zodiac.quick.survey();
     expect(surveyForm.schema).toBeDefined();
   });
 

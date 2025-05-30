@@ -19,7 +19,7 @@ interface Templates {
 
 const reactTsTemplate: Template = {
   name: "React + TypeScript",
-  description: "React app with TypeScript and Conform",
+  description: "React app with TypeScript and zodiac",
   files: {
     "package.json": (context: TemplateContext) => `{
   "name": "${context.projectName}",
@@ -35,7 +35,7 @@ const reactTsTemplate: Template = {
   "dependencies": {
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "conform": "latest",
+    "zodiac": "latest",
     "zod": "^3.25.41"
   },
   "devDependencies": {
@@ -55,13 +55,13 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 )`,
-    "src/App.tsx": `import { conform } from 'conform'
+    "src/App.tsx": `import { zodiac } from 'zodiac'
 
 function App() {
-  const contactForm = conform.form()
-    .add('name', conform.field.text({ required: true }))
-    .add('email', conform.field.email({ required: true }))
-    .add('message', conform.field.textarea({ rows: 4 }))
+  const contactForm = zodiac.form()
+    .add('name', zodiac.field.text({ required: true }))
+    .add('email', zodiac.field.email({ required: true }))
+    .add('message', zodiac.field.textarea({ rows: 4 }))
     .build();
 
   return (
@@ -71,7 +71,7 @@ function App() {
         <form>
           {/* Auto-generated form fields would go here */}
           <p className="text-gray-600">
-            Conform form fields will be generated here!
+            zodiac form fields will be generated here!
           </p>
         </form>
       </div>
@@ -85,7 +85,7 @@ export default App`,
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Conform App</title>
+    <title>zodiac App</title>
   </head>
   <body>
     <div id="root"></div>
@@ -94,7 +94,7 @@ export default App`,
 </html>`,
     "README.md": (context: TemplateContext) => `# ${context.projectName}
 
-A Conform-powered React application.
+A zodiac-powered React application.
 
 ## Getting Started
 
@@ -105,7 +105,7 @@ npm run dev
 
 ## Learn More
 
-- [Conform Documentation](https://conform.dev)
+- [zodiac Documentation](https://zodiac.dev)
 - [React Documentation](https://reactjs.org)
 `,
   },
@@ -116,21 +116,21 @@ export const templates: Templates = {
   "react-js": {
     ...reactTsTemplate,
     name: "React + JavaScript",
-    description: "React app with JavaScript and Conform",
+    description: "React app with JavaScript and zodiac",
   },
   nextjs: {
     ...reactTsTemplate,
     name: "Next.js + TypeScript",
-    description: "Next.js app with TypeScript and Conform",
+    description: "Next.js app with TypeScript and zodiac",
   },
   vite: {
     ...reactTsTemplate,
     name: "Vite + React + TypeScript",
-    description: "Vite-powered React app with TypeScript and Conform",
+    description: "Vite-powered React app with TypeScript and zodiac",
   },
   storybook: {
     ...reactTsTemplate,
     name: "Storybook Component Library",
-    description: "Component library with Storybook and Conform",
+    description: "Component library with Storybook and zodiac",
   },
 };

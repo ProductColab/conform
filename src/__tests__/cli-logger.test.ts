@@ -16,7 +16,7 @@ describe("CLI Logger", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
-    delete process.env.CONFORM_VERBOSE;
+    delete process.env.ZODIAC_VERBOSE;
   });
 
   it("should log info messages with blue icon", () => {
@@ -56,7 +56,7 @@ describe("CLI Logger", () => {
   });
 
   it("should show error stack in verbose mode", () => {
-    process.env.CONFORM_VERBOSE = "true";
+    process.env.ZODIAC_VERBOSE = "true";
     const error = new Error("Test error");
 
     logger.error("Failed operation", error);
@@ -87,7 +87,7 @@ describe("CLI Logger", () => {
     expect(consoleSpy.log).not.toHaveBeenCalled();
 
     // Verbose mode
-    process.env.CONFORM_VERBOSE = "true";
+    process.env.ZODIAC_VERBOSE = "true";
     logger.debug("Debug message");
 
     expect(consoleSpy.log).toHaveBeenCalledWith(
@@ -109,7 +109,7 @@ describe("CLI Logger", () => {
   });
 
   it("should handle non-Error objects in error logging", () => {
-    process.env.CONFORM_VERBOSE = "true";
+    process.env.ZODIAC_VERBOSE = "true";
     const errorObject = { message: "Custom error", code: 500 };
 
     logger.error("Failed with object", errorObject);

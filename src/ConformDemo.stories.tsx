@@ -24,9 +24,9 @@ import { CommonRules } from "./utils/rule-builder";
 // =============================================================================
 
 /**
- * ConformDemo-specific interactions for testing core logic
+ * ZodiacDemo-specific interactions for testing core logic
  */
-const conformDemoInteractions = {
+const zodiacDemoInteractions = {
   /**
    * Switch to a specific demo tab
    */
@@ -45,7 +45,7 @@ const conformDemoInteractions = {
 /**
  * Pre-built play functions focusing on core functionality
  */
-const conformDemoPlayFunctions = {
+const zodiacDemoPlayFunctions = {
   /**
    * Test schema form validation and submission
    */
@@ -55,7 +55,7 @@ const conformDemoPlayFunctions = {
       const canvas = within(canvasElement);
 
       // Navigate to schema form
-      await conformDemoInteractions.switchToDemo(canvas, "Schema-Based Forms");
+      await zodiacDemoInteractions.switchToDemo(canvas, "Schema-Based Forms");
 
       // Wait for form to load
       await new Promise((resolve) => setTimeout(resolve, 300));
@@ -121,7 +121,7 @@ const conformDemoPlayFunctions = {
       const canvas = within(canvasElement);
 
       // Navigate to dynamic forms
-      await conformDemoInteractions.switchToDemo(canvas, "Dynamic Forms");
+      await zodiacDemoInteractions.switchToDemo(canvas, "Dynamic Forms");
 
       // Verify the rules section exists
       expect(canvas.getByText("Active Rules")).toBeInTheDocument();
@@ -169,7 +169,7 @@ const conformDemoPlayFunctions = {
     async ({ canvasElement }: { canvasElement: HTMLElement }) => {
       const canvas = within(canvasElement);
 
-      await conformDemoInteractions.switchToDemo(canvas, "Visual Rule Builder");
+      await zodiacDemoInteractions.switchToDemo(canvas, "Visual Rule Builder");
 
       try {
         // Build a complete rule
@@ -288,7 +288,7 @@ const interactWithRadixSelect = async (
 // =============================================================================
 
 // Demo wrapper component that showcases all features
-const ConformDemo = () => {
+const ZodiacDemo = () => {
   const [activeDemo, setActiveDemo] = useState<"schema" | "rules" | "dynamic">(
     "schema"
   );
@@ -442,7 +442,7 @@ const ConformDemo = () => {
       {/* Header */}
       <div className="text-center space-y-4">
         <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-          Conform Demo
+          zodiac Demo
         </h1>
         <p className="text-xl text-gray-600 max-w-3xl mx-auto">
           A powerful React library for building dynamic, schema-driven forms
@@ -700,15 +700,15 @@ const ConformDemo = () => {
 // =============================================================================
 
 // Storybook configuration
-const meta: Meta<typeof ConformDemo> = {
-  title: "🚀 Conform Demo",
-  component: ConformDemo,
+const meta: Meta<typeof ZodiacDemo> = {
+  title: "🚀 zodiac Demo",
+  component: ZodiacDemo,
   parameters: {
     layout: "fullscreen",
     docs: {
       description: {
         component: `
-# Conform - Dynamic Form Builder
+# zodiac - Dynamic Form Builder
 
 A comprehensive React library for building dynamic, schema-driven forms with comprehensive business logic capabilities.
 
@@ -728,7 +728,7 @@ A comprehensive React library for building dynamic, schema-driven forms with com
 - **Workflow Builders**: Multi-step forms with branching logic
 - **Admin Panels**: Dynamic content management interfaces
 
-This demo showcases the three core capabilities of Conform in an interactive format.
+This demo showcases the three core capabilities of zodiac in an interactive format.
         `,
       },
     },
@@ -740,12 +740,12 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const InteractiveDemo: Story = {
-  render: () => <ConformDemo />,
+  render: () => <ZodiacDemo />,
   parameters: {
     docs: {
       description: {
         story: `
-An interactive demonstration of Conform's capabilities:
+An interactive demonstration of zodiac's capabilities:
 
 1. **Schema Forms**: See how complex forms are generated from Zod schemas
 2. **Rule Builder**: Build conditional logic visually 
@@ -756,7 +756,7 @@ Click between the feature cards to explore different aspects of the library.
       },
     },
   },
-  play: conformDemoPlayFunctions.schemaFormInteraction(),
+  play: zodiacDemoPlayFunctions.schemaFormInteraction(),
 };
 
 // =============================================================================
@@ -765,7 +765,7 @@ Click between the feature cards to explore different aspects of the library.
 
 export const SchemaFormValidationTest: Story = {
   name: "📝 Schema Form Validation Test",
-  render: () => <ConformDemo />,
+  render: () => <ZodiacDemo />,
   parameters: {
     docs: {
       description: {
@@ -774,12 +774,12 @@ export const SchemaFormValidationTest: Story = {
       },
     },
   },
-  play: conformDemoPlayFunctions.schemaFormInteraction(),
+  play: zodiacDemoPlayFunctions.schemaFormInteraction(),
 };
 
 export const DynamicFormBehaviorTest: Story = {
   name: "⚡ Dynamic Form Behavior Test",
-  render: () => <ConformDemo />,
+  render: () => <ZodiacDemo />,
   parameters: {
     docs: {
       description: {
@@ -788,12 +788,12 @@ export const DynamicFormBehaviorTest: Story = {
       },
     },
   },
-  play: conformDemoPlayFunctions.dynamicFormBehavior(),
+  play: zodiacDemoPlayFunctions.dynamicFormBehavior(),
 };
 
 export const RuleBuilderWorkflowTest: Story = {
   name: "🔧 Rule Builder Workflow Test",
-  render: () => <ConformDemo />,
+  render: () => <ZodiacDemo />,
   parameters: {
     docs: {
       description: {
@@ -802,5 +802,5 @@ export const RuleBuilderWorkflowTest: Story = {
       },
     },
   },
-  play: conformDemoPlayFunctions.ruleBuilderWorkflow(),
+  play: zodiacDemoPlayFunctions.ruleBuilderWorkflow(),
 };

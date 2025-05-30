@@ -20,19 +20,19 @@ const version = packageJson.version;
 const program = new Command();
 
 program
-  .name("conform")
-  .description("🎯 Conform - Dynamic Schema-Driven Forms CLI")
+  .name("zodiac")
+  .description("🎯 zodiac - Dynamic Schema-Driven Forms CLI")
   .version(version, "-v, --version", "Show version number")
   .helpOption("-h, --help", "Show help information");
 
 // Add global options
 program
   .option("--verbose", "Enable verbose logging")
-  .option("--config <path>", "Path to config file", "conform.config.js")
+  .option("--config <path>", "Path to config file", "zodiac.config.js")
   .hook("preAction", (thisCommand) => {
     const opts = thisCommand.opts();
     if (opts.verbose) {
-      process.env.CONFORM_VERBOSE = "true";
+      process.env.ZODIAC_VERBOSE = "true";
     }
   });
 
@@ -48,15 +48,15 @@ program.addCommand(migrateCommand);
 program.on("--help", () => {
   console.log("");
   console.log(chalk.bold("Examples:"));
-  console.log("  $ conform init my-app");
-  console.log("  $ conform generate contact-form");
-  console.log("  $ conform docs --format html --output docs/");
-  console.log("  $ conform validate src/schemas/");
-  console.log("  $ conform audit --unused-fields");
+  console.log("  $ zodiac init my-app");
+  console.log("  $ zodiac generate contact-form");
+  console.log("  $ zodiac docs --format html --output docs/");
+  console.log("  $ zodiac validate src/schemas/");
+  console.log("  $ zodiac audit --unused-fields");
   console.log("");
   console.log(chalk.bold("Learn more:"));
-  console.log("  Documentation: https://conform.dev/docs");
-  console.log("  Issues: https://github.com/your-org/conform/issues");
+  console.log("  Documentation: https://zodiac.dev/docs");
+  console.log("  Issues: https://github.com/your-org/zodiac/issues");
 });
 
 // Error handling
