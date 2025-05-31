@@ -716,6 +716,410 @@ describe("useFormRules", () => {
     });
   });
 
+  describe("New Action Handlers", () => {
+    it("should handle showMessage action with console output", () => {
+      const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+      const rules: Rule[] = [
+        {
+          id: "show-message-console",
+          condition: {
+            field: "firstName",
+            operator: "equals",
+            value: "Welcome",
+          },
+          actions: [
+            {
+              type: "showMessage",
+              params: { message: "Welcome to the form!" },
+            },
+          ],
+          enabled: true,
+        },
+      ];
+
+      renderHook(() =>
+        useFormRules({
+          schema: TestSchema,
+          rules,
+          defaultValues: {
+            firstName: "Welcome",
+          },
+          // No toast function provided - should not call console.log anymore
+        })
+      );
+
+      // With no toast function provided, the message should not be logged
+      expect(consoleSpy).not.toHaveBeenCalled();
+
+      consoleSpy.mockRestore();
+    });
+
+    it("should handle showMessage action with toast function", () => {
+      const mockToast = vi.fn();
+
+      const rules: Rule[] = [
+        {
+          id: "show-message-toast",
+          condition: {
+            field: "firstName",
+            operator: "equals",
+            value: "Welcome",
+          },
+          actions: [
+            {
+              type: "showMessage",
+              params: { message: "Welcome to the form!" },
+            },
+          ],
+          enabled: true,
+        },
+      ];
+
+      renderHook(() =>
+        useFormRules({
+          schema: TestSchema,
+          rules,
+          toast: mockToast,
+          defaultValues: {
+            firstName: "Welcome",
+          },
+        })
+      );
+
+      // Toast function should be called with message and type
+      expect(mockToast).toHaveBeenCalledWith("Welcome to the form!", "info");
+    });
+
+    it("should handle showMessage action with custom action callback", () => {
+      const mockCustomAction = vi.fn();
+
+      const rules: Rule[] = [
+        {
+          id: "show-message-custom",
+          condition: {
+            field: "isAdmin",
+            operator: "equals",
+            value: true,
+          },
+          actions: [
+            {
+              type: "showMessage",
+              params: { message: "Admin access granted" },
+            },
+          ],
+          enabled: true,
+        },
+      ];
+
+      renderHook(() =>
+        useFormRules({
+          schema: TestSchema,
+          rules,
+          onCustomAction: mockCustomAction,
+          defaultValues: {
+            isAdmin: true,
+          },
+        })
+      );
+
+      // Custom action should be called for showMessage
+      expect(mockCustomAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "showMessage",
+          params: { message: "Admin access granted" },
+        }),
+        expect.any(Object)
+      );
+    });
+
+    it("should handle redirect action with custom handler", () => {
+      const mockCustomAction = vi.fn();
+
+      const rules: Rule[] = [
+        {
+          id: "redirect-rule",
+          condition: {
+            field: "age",
+            operator: "greater_than",
+            value: 65,
+          },
+          actions: [
+            {
+              type: "redirect",
+              params: { url: "/senior-form" },
+            },
+          ],
+          enabled: true,
+        },
+      ];
+
+      renderHook(() =>
+        useFormRules({
+          schema: TestSchema,
+          rules,
+          onCustomAction: mockCustomAction,
+          defaultValues: {
+            age: 70,
+          },
+        })
+      );
+
+      // Custom action should be called for redirect
+      expect(mockCustomAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "redirect",
+          params: { url: "/senior-form" },
+        }),
+        expect.any(Object)
+      );
+    });
+
+    it("should handle redirect action with value property", () => {
+      const mockCustomAction = vi.fn();
+
+      const rules: Rule[] = [
+        {
+          id: "redirect-value-rule",
+          condition: {
+            field: "maritalStatus",
+            operator: "equals",
+            value: "married",
+          },
+          actions: [
+            {
+              type: "redirect",
+              value: "/couples-form",
+            },
+          ],
+          enabled: true,
+        },
+      ];
+
+      renderHook(() =>
+        useFormRules({
+          schema: TestSchema,
+          rules,
+          onCustomAction: mockCustomAction,
+          defaultValues: {
+            maritalStatus: "married",
+          },
+        })
+      );
+
+      // Custom action should be called for redirect with value
+      expect(mockCustomAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "redirect",
+          value: "/couples-form",
+        }),
+        expect.any(Object)
+      );
+    });
+
+    it("should handle redirect action fallback to window.location", () => {
+      const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+      // Mock window.location for testing
+      const mockLocation = { href: "" };
+      Object.defineProperty(window, "location", {
+        value: mockLocation,
+        writable: true,
+      });
+
+      const rules: Rule[] = [
+        {
+          id: "redirect-fallback",
+          condition: {
+            field: "firstName",
+            operator: "equals",
+            value: "Redirect",
+          },
+          actions: [
+            {
+              type: "redirect",
+              params: { url: "/dashboard" },
+            },
+          ],
+          enabled: true,
+        },
+      ];
+
+      renderHook(() =>
+        useFormRules({
+          schema: TestSchema,
+          rules,
+          // No onCustomAction - should fallback to window.location
+          defaultValues: {
+            firstName: "Redirect",
+          },
+        })
+      );
+
+      // Should log the redirect
+      expect(consoleSpy).toHaveBeenCalledWith("Redirecting to: /dashboard");
+      // Should set window.location.href
+      expect(mockLocation.href).toBe("/dashboard");
+
+      consoleSpy.mockRestore();
+    });
+
+    it("should handle preventDefault action with custom handler", () => {
+      const mockCustomAction = vi.fn();
+
+      const rules: Rule[] = [
+        {
+          id: "prevent-default-rule",
+          condition: {
+            field: "isAdmin",
+            operator: "equals",
+            value: false,
+          },
+          actions: [
+            {
+              type: "preventDefault",
+            },
+          ],
+          enabled: true,
+        },
+      ];
+
+      renderHook(() =>
+        useFormRules({
+          schema: TestSchema,
+          rules,
+          onCustomAction: mockCustomAction,
+          defaultValues: {
+            isAdmin: false,
+          },
+        })
+      );
+
+      // Custom action should be called for preventDefault
+      expect(mockCustomAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "preventDefault",
+        }),
+        expect.any(Object)
+      );
+    });
+
+    it("should handle preventDefault action fallback with console log", () => {
+      const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+      const rules: Rule[] = [
+        {
+          id: "prevent-default-fallback",
+          condition: {
+            field: "age",
+            operator: "less_than",
+            value: 18,
+          },
+          actions: [
+            {
+              type: "preventDefault",
+            },
+          ],
+          enabled: true,
+        },
+      ];
+
+      renderHook(() =>
+        useFormRules({
+          schema: TestSchema,
+          rules,
+          // No onCustomAction - should fallback to console.log
+          defaultValues: {
+            age: 16,
+          },
+        })
+      );
+
+      // Should log the preventDefault message
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "Form default behavior should be prevented"
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    it("should ignore showMessage action without message parameter", () => {
+      const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+      const rules: Rule[] = [
+        {
+          id: "show-message-no-params",
+          condition: {
+            field: "firstName",
+            operator: "equals",
+            value: "Test",
+          },
+          actions: [
+            {
+              type: "showMessage",
+              // No params.message
+            },
+          ],
+          enabled: true,
+        },
+      ];
+
+      renderHook(() =>
+        useFormRules({
+          schema: TestSchema,
+          rules,
+          defaultValues: {
+            firstName: "Test",
+          },
+        })
+      );
+
+      // Should not log anything if no message
+      expect(consoleSpy).not.toHaveBeenCalled();
+
+      consoleSpy.mockRestore();
+    });
+
+    it("should ignore redirect action without url or value", () => {
+      const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+      const mockCustomAction = vi.fn();
+
+      const rules: Rule[] = [
+        {
+          id: "redirect-no-url",
+          condition: {
+            field: "firstName",
+            operator: "equals",
+            value: "Test",
+          },
+          actions: [
+            {
+              type: "redirect",
+              // No params.url or value
+            },
+          ],
+          enabled: true,
+        },
+      ];
+
+      renderHook(() =>
+        useFormRules({
+          schema: TestSchema,
+          rules,
+          onCustomAction: mockCustomAction,
+          defaultValues: {
+            firstName: "Test",
+          },
+        })
+      );
+
+      // Should not call custom action if no URL
+      expect(mockCustomAction).not.toHaveBeenCalled();
+      expect(consoleSpy).not.toHaveBeenCalled();
+
+      consoleSpy.mockRestore();
+    });
+  });
+
   describe("Performance and Edge Cases", () => {
     it("should handle empty rules array", () => {
       const { result } = renderHook(() =>

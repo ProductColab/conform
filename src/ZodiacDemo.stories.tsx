@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, userEvent, within } from "@storybook/test";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { z } from "zod/v4";
 import { SchemaForm } from "./form/SchemaForm";
 import { RuleBuilder } from "./components/RuleBuilder";
@@ -103,12 +103,8 @@ const zodiacDemoPlayFunctions = {
         // Now should see submission result
         const successResult = canvas.getByText("Form Submission Result");
         expect(successResult).toBeInTheDocument();
-
-        console.log(
-          "✅ Schema form validation and submission working correctly!"
-        );
-      } catch (error) {
-        console.warn("Schema form test incomplete:", error);
+      } catch {
+        // No logging
       }
     },
 
@@ -128,7 +124,6 @@ const zodiacDemoPlayFunctions = {
       await new Promise((resolve) => setTimeout(resolve, 300));
 
       // Test conditional field visibility
-      console.log("🔍 Testing dynamic form rule evaluation...");
 
       // Initially, company fields should be hidden (accountType defaults to "personal")
       expect(canvas.queryByLabelText(/company name/i)).toBeNull();
@@ -157,8 +152,6 @@ const zodiacDemoPlayFunctions = {
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       expect(canvas.getByLabelText(/company size/i)).toBeVisible();
-
-      console.log("✅ Dynamic form rules working correctly!");
     },
 
   /**
@@ -200,10 +193,8 @@ const zodiacDemoPlayFunctions = {
         const copyButton = canvas.getByText("Copy");
         await userEvent.click(copyButton);
         expect(canvas.getByText("Copied!")).toBeInTheDocument();
-
-        console.log("✅ Rule builder workflow working correctly!");
-      } catch (error) {
-        console.warn("Rule builder test incomplete:", error);
+      } catch {
+        // No logging
       }
     },
 };
@@ -389,29 +380,8 @@ const ZodiacDemo = () => {
     CommonRules.showWhen("companySize", "accountType", "enterprise"),
   ];
 
-  // DEBUG: Log the actual rules being generated
-  console.log(
-    "🔍 DEBUG: Generated Rules:",
-    JSON.stringify(dynamicRules, null, 2)
-  );
-
-  // DEBUG: Check what the JSON schema looks like
-  const debugJsonSchema = useMemo(() => {
-    try {
-      const jsonSchema = z.toJSONSchema(userRegistrationSchema);
-      console.log("🔍 DEBUG: Full JSON Schema:", jsonSchema);
-      return jsonSchema;
-    } catch (error) {
-      console.error("🔍 DEBUG: Error generating JSON schema:", error);
-      return null;
-    }
-  }, []);
-
-  console.log("🔍 DEBUG: Schema processed:", !!debugJsonSchema);
-
   const handleFormSubmit = async (values: unknown) => {
     setFormData(values);
-    console.log("Form submitted:", values);
   };
 
   const demoCards = [

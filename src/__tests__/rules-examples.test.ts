@@ -1,7 +1,11 @@
 import { describe, expect, test } from "vitest";
 import { RuleBuilders } from "../schemas/rule.schema";
 import { evaluateRuleCondition } from "../utils/rule-evaluation";
-import type { BaseCondition, RuleContext } from "../schemas/rule.schema";
+import type {
+  BaseCondition,
+  RuleContext,
+  ComplexCondition,
+} from "../schemas/rule.schema";
 
 const createTestContext = (
   formData: Record<string, unknown> = {}
@@ -125,19 +129,6 @@ describe("Rules Examples - Migration from dependsOn/showWhen", () => {
       ],
     };
 
-    // Alternative: Check context permissions directly
-    const contextPermissionRule = {
-      condition: {
-        field: "contextPermissions",
-        operator: "contains" as const,
-        value: {
-          type: "context" as const,
-          key: "permissions",
-        },
-      },
-      actions: [{ type: "show" as const, target: "adminPanel" }],
-    };
-
     const adminContext = createTestContext({
       userPermissions: ["read", "write", "admin"],
       contextPermissions: ["read", "write", "admin"], // This will reference context.permissions
@@ -155,18 +146,7 @@ describe("Rules Examples - Migration from dependsOn/showWhen", () => {
 
   test("Numeric comparisons and ranges", () => {
     // Show bulk discount field if quantity > 10
-    const rule = RuleBuilders.whenFieldEquals(
-      "quantity",
-      {
-        field: "quantity",
-        operator: "greater_than",
-        value: 10,
-      },
-      [{ type: "show", target: "bulkDiscount" }]
-    );
-
-    // Actually, let's use the proper way to create this rule
-    const quantityRule = {
+    const rule = {
       condition: {
         field: "quantity",
         operator: "greater_than" as const,
@@ -178,12 +158,12 @@ describe("Rules Examples - Migration from dependsOn/showWhen", () => {
     const highQuantityContext = createTestContext({ quantity: 15 });
     const lowQuantityContext = createTestContext({ quantity: 5 });
 
-    expect(
-      evaluateRuleCondition(quantityRule.condition, highQuantityContext)
-    ).toBe(true);
-    expect(
-      evaluateRuleCondition(quantityRule.condition, lowQuantityContext)
-    ).toBe(false);
+    expect(evaluateRuleCondition(rule.condition, highQuantityContext)).toBe(
+      true
+    );
+    expect(evaluateRuleCondition(rule.condition, lowQuantityContext)).toBe(
+      false
+    );
   });
 
   test("String pattern matching", () => {
@@ -194,10 +174,7 @@ describe("Rules Examples - Migration from dependsOn/showWhen", () => {
         operator: "not_equals" as const,
         value: "US",
       },
-      actions: [
-        { type: "show" as const, target: "internationalPhone" },
-        { type: "show" as const, target: "currencyPreference" },
-      ],
+      actions: [{ type: "show" as const, target: "internationalPhone" }],
     };
 
     const usContext = createTestContext({ countryCode: "US" });
@@ -244,14 +221,14 @@ describe("Rules Examples - Migration from dependsOn/showWhen", () => {
                 field: "accountType",
                 operator: "equals" as const,
                 value: "enterprise",
-              },
+              } satisfies BaseCondition,
               {
                 field: "userTier",
                 operator: "equals" as const,
                 value: "platinum",
-              },
+              } satisfies BaseCondition,
             ],
-          },
+          } satisfies ComplexCondition,
           {
             operator: "or" as const,
             conditions: [
@@ -259,16 +236,16 @@ describe("Rules Examples - Migration from dependsOn/showWhen", () => {
                 field: "userRole",
                 operator: "equals" as const,
                 value: "admin",
-              },
+              } satisfies BaseCondition,
               {
                 field: "userPermissions",
                 operator: "contains" as const,
                 value: "admin",
-              },
+              } satisfies BaseCondition,
             ],
-          },
+          } satisfies ComplexCondition,
         ],
-      },
+      } satisfies ComplexCondition,
       actions: [{ type: "show" as const, target: "enterpriseFeatures" }],
     };
 

@@ -4,7 +4,7 @@ import { useFormContext, useFieldArray } from "react-hook-form";
 import type { FieldArrayWithId } from "react-hook-form";
 import { z } from "zod/v4";
 import type { FieldMetadata } from "@/schemas/field.schema";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   DndContext,
   closestCenter,
@@ -156,12 +156,9 @@ export function ListField({
   metadata,
   children,
 }: ListFieldProps) {
+  // ALL HOOKS MUST BE CALLED UNCONDITIONALLY AT THE TOP
   const formContext = useFormContext();
   const [collapsedItems, setCollapsedItems] = useState<Set<number>>(new Set());
-
-  if (!formContext) {
-    return null;
-  }
 
   // Extract schema information from the property using type guards
   const getArrayConstraints = useCallback(() => {
@@ -173,7 +170,7 @@ export function ListField({
           maxItems: property.maxItems ?? property.maxLength ?? 10,
         };
       }
-    } catch (error) {
+    } catch {
       // Fallback to metadata if schema parsing fails
     }
     return { minItems: 0, maxItems: 10 };
@@ -195,19 +192,14 @@ export function ListField({
           return property.items[0];
         }
       }
-    } catch (error) {
+    } catch {
       // Fallback to null
     }
     return null;
   }, [property]);
 
-  const { fields, append, remove, move } = useFieldArray({
-    control: formContext.control,
-    name,
-  });
-
   // Generate default value for new items based on schema
-  const generateDefaultItem = useCallback((): any => {
+  const generateDefaultItem = useCallback((): unknown => {
     const itemSchema = getItemSchema();
 
     // If schema has a default, use it
@@ -277,6 +269,11 @@ export function ListField({
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  const { fields, append, remove, move } = useFieldArray({
+    control: formContext.control,
+    name,
+  });
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
@@ -358,12 +355,19 @@ export function ListField({
     return template.replace("{index}", (index + 1).toString());
   }, []);
 
-  // Initialize collapsed state for existing items
-  useState(() => {
-    if (!itemTemplate.defaultExpanded) {
-      setCollapsedItems(new Set(fields.map((_, index) => index)));
+  // Initialize collapsed state for existing items using useEffect instead of nested useState
+  useEffect(() => {
+    if (!itemTemplate.defaultExpanded && fields.length > 0) {
+      // Create indices array without directly using fields
+      const indices = Array.from({ length: fields.length }, (_, i) => i);
+      setCollapsedItems(new Set(indices));
     }
-  });
+  }, [itemTemplate.defaultExpanded, fields.length]);
+
+  // Early return AFTER all hooks have been called
+  if (!formContext) {
+    return null;
+  }
 
   const canAddMore = fields.length < maxItems;
   const canRemove = fields.length > minItems;

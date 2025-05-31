@@ -522,7 +522,7 @@ export const InteractiveFormTest: TestingStory = {
 
     try {
       await userEvent.click(submitButton);
-    } catch (error) {
+    } catch {
       // Expected validation error - this is fine
     }
 

@@ -44,6 +44,12 @@ interface RuleBasedSchemaFormProps<T extends FieldValues> {
   onCustomAction?: (action: RuleAction, context: RuleContext) => void;
   onRuleEvaluation?: (ruleResults: UseFormRulesReturn<T>) => void;
   enableRealTimeRules?: boolean;
+
+  // Sonner toast integration
+  toast?: (
+    message: string,
+    type?: "success" | "error" | "info" | "warning"
+  ) => void;
 }
 
 interface RuleBasedFormRendererProps<T extends FieldValues> {
@@ -249,6 +255,7 @@ export function RuleBasedSchemaForm<T extends FieldValues>({
   context = {},
   defaultValues,
   onCustomAction,
+  toast,
   ...rendererProps
 }: RuleBasedSchemaFormProps<T>) {
   // Extract default values from schema for form initialization
@@ -289,6 +296,7 @@ export function RuleBasedSchemaForm<T extends FieldValues>({
     defaultValues: mergedDefaults,
     context,
     onCustomAction,
+    toast,
   });
 
   // 🎯 NEW: Complete rule-based form rendering

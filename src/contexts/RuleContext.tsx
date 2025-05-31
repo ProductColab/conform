@@ -13,7 +13,6 @@ interface RuleContextType<T extends FieldValues = FieldValues> {
 // Rule context for advanced composition scenarios
 const RuleContext = createContext<RuleContextType | null>(null);
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const useRuleContext = (fieldName?: string): FieldConfig | undefined => {
   const context = useContext(RuleContext);
   if (!context || !fieldName) return undefined;

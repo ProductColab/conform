@@ -57,47 +57,64 @@ export function SchemaForm<T extends FieldValues>({
 }: SchemaFormProps<T>) {
   const [error, setError] = useState<string | null>(null);
 
-  // Convert Zod schema to JSON schema directly
-  let jsonSchema: any;
+  // Always call useForm first, before any conditional logic
+  const internalForm = useForm<T>({
+    resolver: zodResolver(schema, {
+      mode: "async",
+    }),
+    defaultValues: defaultValues as DefaultValues<T>,
+  });
+
+  const mergedForm = form ?? internalForm;
+
+  // Try to convert Zod schema to JSON schema after hooks are called
+  let jsonSchema: z.core.JSONSchema.BaseSchema | null = null;
+  let schemaError: string | null = null;
   try {
     jsonSchema = z.toJSONSchema(schema);
-  } catch (err) {
+  } catch {
+    schemaError = "Unable to generate form from the provided schema.";
+  }
+
+  // If schema conversion failed, show error
+  if (schemaError || !jsonSchema || !jsonSchema.properties) {
     return (
       <div className={className}>
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Unable to generate form from the provided schema.
+            {schemaError || "Unable to generate form from the provided schema."}
           </AlertDescription>
         </Alert>
       </div>
     );
   }
 
-  const extractedDefaults: Record<string, any> = {};
-  if (jsonSchema && jsonSchema.properties) {
-    Object.entries(jsonSchema.properties).forEach(
-      ([key, property]: [string, any]) => {
-        if (property.default !== undefined) {
-          extractedDefaults[key] = property.default;
-        }
+  // Extract defaults from schema and merge with provided defaults
+  const extractedDefaults: Record<string, z.core.JSONSchema.Schema> = {};
+  Object.entries(jsonSchema.properties).forEach(
+    ([key, property]: [string, z.core.JSONSchema.Schema]) => {
+      if (property.default !== undefined) {
+        extractedDefaults[key] =
+          property.default as z.core.JSONSchema.Schema & {
+            default: z.core.JSONSchema.Schema;
+          };
       }
-    );
-  }
+    }
+  );
 
   const mergedDefaults: DefaultValues<T> = {
     ...extractedDefaults,
     ...defaultValues,
   } as DefaultValues<T>;
 
-  const mergedForm =
-    form ||
-    useForm<T>({
-      resolver: zodResolver(schema, {
-        mode: "async",
-      }),
-      defaultValues: mergedDefaults,
-    });
+  // Update form defaults if they differ from current defaults
+  if (
+    JSON.stringify(mergedForm.formState.defaultValues) !==
+    JSON.stringify(mergedDefaults)
+  ) {
+    mergedForm.reset(mergedDefaults);
+  }
 
   const handleSubmit = async (values: T) => {
     setError(null);
@@ -107,19 +124,6 @@ export function SchemaForm<T extends FieldValues>({
       setError(err instanceof Error ? err.message : "An error occurred");
     }
   };
-
-  if (!jsonSchema || !jsonSchema.properties) {
-    return (
-      <div className={className}>
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Unable to generate form from the provided schema.
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
 
   const fieldEntries = Object.entries(jsonSchema.properties).filter(
     ([name]) => !excludeFields.includes(name)

@@ -50,7 +50,7 @@ export const InteractiveCopy: Story = {
       },
     },
   },
-  play: async ({ canvasElement }) => {
+  play: async () => {
     // This would be where we could add interaction testing in the future
   },
 };

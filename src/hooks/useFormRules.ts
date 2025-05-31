@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useReducer, useEffect } from "react";
+import { useMemo, useCallback, useReducer, useRef, useEffect } from "react";
 import {
   useForm,
   type FieldValues,
@@ -122,6 +122,10 @@ export interface UseFormRulesOptions<T extends FieldValues> {
   defaultValues?: DefaultValues<T>;
   context?: Partial<RuleContext>;
   onCustomAction?: (action: SchemaRuleAction, context: RuleContext) => void;
+  toast?: (
+    message: string,
+    type?: "success" | "error" | "info" | "warning"
+  ) => void;
 }
 
 export interface UseFormRulesReturn<T extends FieldValues> {
@@ -354,6 +358,7 @@ export function useFormRules<T extends FieldValues>({
   defaultValues,
   context = {},
   onCustomAction,
+  toast,
 }: UseFormRulesOptions<T>): UseFormRulesReturn<T> {
   const form = useForm<T>({
     resolver: zodResolver(schema),
@@ -362,6 +367,10 @@ export function useFormRules<T extends FieldValues>({
   });
 
   const { getValues } = form;
+
+  // Use ref to store form instance to prevent dependency changes
+  const formRef = useRef(form);
+  formRef.current = form;
 
   // Create field validator instance
   const validator = useMemo(() => new FieldValidator(schema), [schema]);
@@ -379,24 +388,28 @@ export function useFormRules<T extends FieldValues>({
 
   const [ruleState, dispatch] = useReducer(ruleStateReducer, initialState);
 
-  // 🚀 SMART: Watch form data and evaluate rules only when data actually changes
+  // Simple form data watching
   const formData = useWatch({ control: form.control });
 
-  // Memoize rule evaluation based on actual form data changes
-  useEffect(() => {
-    evaluateRules();
-  }, [formData, rules, schema]); // Only re-evaluate when these actually change
+  // Use JSON stringification to detect actual changes and prevent infinite loops
+  const formDataRef = useRef<string>("");
+  const formDataString = JSON.stringify(formData);
 
-  // Evaluate all rules and dispatch actions to update state
-  const evaluateRules = useCallback(() => {
+  // Evaluate rules when form data actually changes
+  useEffect(() => {
+    // Only re-evaluate if form data actually changed
+    if (formDataRef.current === formDataString) {
+      return;
+    }
+    formDataRef.current = formDataString;
+
     // Get current form context for rule evaluation
     const currentContext: RuleContext = {
       formData: getValues(),
       ...context,
     };
 
-    // 🔥 CRITICAL FIX: Initialize fields to default visible state FIRST
-    // This ensures we start with a clean slate before applying rules
+    // Initialize fields to default visible state FIRST
     try {
       const jsonSchema = z.toJSONSchema(schema);
       if (jsonSchema.properties) {
@@ -470,7 +483,7 @@ export function useFormRules<T extends FieldValues>({
                       // Check if value is different to avoid unnecessary updates
                       const currentValue = getValues(action.target as Path<T>);
                       if (currentValue !== resolvedValue) {
-                        form.setValue(
+                        formRef.current.setValue(
                           action.target as Path<T>,
                           resolvedValue as T[keyof T]
                         );
@@ -561,11 +574,11 @@ export function useFormRules<T extends FieldValues>({
               case "clear_value":
                 if (!action.target) return;
                 try {
-                  form.setValue(
+                  formRef.current.setValue(
                     action.target as Path<T>,
                     undefined as T[keyof T]
                   );
-                  form.clearErrors(action.target as Path<T>);
+                  formRef.current.clearErrors(action.target as Path<T>);
                 } catch (error) {
                   console.warn(
                     `Failed to clear value for field ${action.target}:`,
@@ -576,6 +589,308 @@ export function useFormRules<T extends FieldValues>({
               case "custom":
                 if (onCustomAction) {
                   onCustomAction(action, currentContext);
+                }
+                break;
+              case "showMessage":
+                // Handle showing messages to users
+                if (action.params?.message) {
+                  const message = String(action.params.message);
+                  // For now, we'll use console.log, but this could be extended
+                  // to work with a toast/notification system via onCustomAction
+                  if (toast) {
+                    toast(message, "info");
+                  }
+
+                  // Also trigger custom action handler if provided
+                  if (onCustomAction) {
+                    onCustomAction(action, currentContext);
+                  }
+                }
+                break;
+              case "redirect":
+                // Handle navigation/redirects
+                if (action.params?.url || action.value) {
+                  const url = String(action.params?.url || action.value || "");
+
+                  // Use custom action handler for redirect implementation
+                  // This allows the consuming application to handle navigation
+                  // in their preferred way (React Router, Next.js router, etc.)
+                  if (onCustomAction) {
+                    onCustomAction(action, currentContext);
+                  } else {
+                    // Fallback to window.location for basic redirect
+                    console.log(`Redirecting to: ${url}`);
+                    if (typeof window !== "undefined" && url) {
+                      window.location.href = url;
+                    }
+                  }
+                }
+                break;
+              case "preventDefault":
+                // Handle preventing default form behavior
+                // This action is typically handled at the form level
+                // We'll trigger the custom action handler to let the consuming
+                // application decide how to prevent default behavior
+                if (onCustomAction) {
+                  onCustomAction(action, currentContext);
+                } else {
+                  console.log("Form default behavior should be prevented");
+                }
+                break;
+            }
+          });
+        }
+      } catch (error) {
+        console.error(`Error evaluating rule ${rule.id}:`, error);
+      }
+    });
+  }, [
+    formDataString,
+    context,
+    customFunctions,
+    getValues,
+    onCustomAction,
+    rules,
+    schema,
+    transformFunctions,
+    validator,
+    toast,
+  ]); // Include all dependencies
+
+  // Manual rule evaluation function for external use
+  const evaluateRules = useCallback(() => {
+    // Get current form context for rule evaluation
+    const currentContext: RuleContext = {
+      formData: getValues(),
+      ...context,
+    };
+
+    // Initialize fields to default visible state FIRST
+    try {
+      const jsonSchema = z.toJSONSchema(schema);
+      if (jsonSchema.properties) {
+        const fieldNames = Object.keys(jsonSchema.properties);
+        dispatch({ type: "INITIALIZE_FIELDS", payload: { fieldNames } });
+      }
+    } catch (error) {
+      console.error("Error parsing schema for field initialization:", error);
+    }
+
+    // Evaluate each rule using the reducer dispatch
+    rules.forEach((rule) => {
+      // Skip disabled rules
+      if (rule.enabled === false) {
+        return;
+      }
+
+      try {
+        const conditionMet = evaluateRuleCondition(
+          rule.condition,
+          currentContext,
+          customFunctions,
+          transformFunctions
+        );
+
+        if (conditionMet) {
+          const { actions: ruleActions } = rule;
+
+          ruleActions?.forEach((action) => {
+            switch (action.type) {
+              case "show":
+                if (!action.target) return;
+                dispatch({
+                  type: "SHOW_FIELD",
+                  payload: { field: action.target },
+                });
+                break;
+              case "hide":
+                if (!action.target) return;
+                dispatch({
+                  type: "HIDE_FIELD",
+                  payload: { field: action.target },
+                });
+                break;
+              case "set_value":
+                if (!action.target) return;
+                if (action.params?.required !== undefined) {
+                  dispatch({
+                    type: "SET_REQUIREMENT",
+                    payload: {
+                      field: action.target,
+                      required: action.params.required === true,
+                    },
+                  });
+                }
+                // Handle setting actual field values using the type-safe approach
+                if (action.value !== undefined) {
+                  const resolvedValue = resolveDynamicValue(
+                    action.value,
+                    currentContext,
+                    customFunctions,
+                    transformFunctions
+                  );
+                  // Use the validator to safely set the value
+                  const validation = validator.validateFieldValue(
+                    action.target as keyof T,
+                    resolvedValue
+                  );
+                  if (validation.valid) {
+                    try {
+                      // Check if value is different to avoid unnecessary updates
+                      const currentValue = getValues(action.target as Path<T>);
+                      if (currentValue !== resolvedValue) {
+                        formRef.current.setValue(
+                          action.target as Path<T>,
+                          resolvedValue as T[keyof T]
+                        );
+                      }
+                    } catch (error) {
+                      console.warn(
+                        `Failed to set validated value for ${action.target}:`,
+                        error
+                      );
+                    }
+                  } else {
+                    console.warn(
+                      `Invalid resolved value for ${action.target}:`,
+                      validation.error
+                    );
+                  }
+                }
+                break;
+              case "enable":
+                if (!action.target) return;
+                dispatch({
+                  type: "ENABLE_FIELD",
+                  payload: { field: action.target },
+                });
+                break;
+              case "disable":
+                if (!action.target) return;
+                dispatch({
+                  type: "DISABLE_FIELD",
+                  payload: { field: action.target },
+                });
+                break;
+              case "trigger_validation":
+                // Validation triggers are handled by the triggerValidation function
+                break;
+              case "show_warning":
+                if (!action.target) return;
+                if (action.params?.message) {
+                  const message = String(action.params.message);
+                  dispatch({
+                    type: "ADD_WARNING",
+                    payload: { field: action.target, message },
+                  });
+                }
+                break;
+              case "show_error":
+                if (!action.target) return;
+                if (action.params?.message) {
+                  const message = String(action.params.message);
+                  dispatch({
+                    type: "ADD_ERROR",
+                    payload: { field: action.target, message },
+                  });
+                }
+                break;
+              case "add_class":
+                if (!action.target) return;
+                if (action.params?.class) {
+                  const className = String(action.params.class);
+                  dispatch({
+                    type: "ADD_CLASS",
+                    payload: { field: action.target, className },
+                  });
+                }
+                break;
+              case "remove_class":
+                if (!action.target) return;
+                if (action.params?.class) {
+                  const className = String(action.params.class);
+                  dispatch({
+                    type: "REMOVE_CLASS",
+                    payload: { field: action.target, className },
+                  });
+                }
+                break;
+              case "set_options":
+                if (!action.target) return;
+                if (action.params?.options) {
+                  const options = Array.isArray(action.params.options)
+                    ? action.params.options
+                    : [action.params.options];
+                  dispatch({
+                    type: "SET_OPTIONS",
+                    payload: { field: action.target, options },
+                  });
+                }
+                break;
+              case "clear_value":
+                if (!action.target) return;
+                try {
+                  formRef.current.setValue(
+                    action.target as Path<T>,
+                    undefined as T[keyof T]
+                  );
+                  formRef.current.clearErrors(action.target as Path<T>);
+                } catch (error) {
+                  console.warn(
+                    `Failed to clear value for field ${action.target}:`,
+                    error
+                  );
+                }
+                break;
+              case "custom":
+                if (onCustomAction) {
+                  onCustomAction(action, currentContext);
+                }
+                break;
+              case "showMessage":
+                // Handle showing messages to users
+                if (action.params?.message) {
+                  const message = String(action.params.message);
+                  // For now, we'll use console.log, but this could be extended
+                  // to work with a toast/notification system via onCustomAction
+                  if (toast) {
+                    toast(message, "info");
+                  }
+
+                  // Also trigger custom action handler if provided
+                  if (onCustomAction) {
+                    onCustomAction(action, currentContext);
+                  }
+                }
+                break;
+              case "redirect":
+                // Handle navigation/redirects
+                if (action.params?.url || action.value) {
+                  const url = String(action.params?.url || action.value || "");
+
+                  // Use custom action handler for redirect implementation
+                  // This allows the consuming application to handle navigation
+                  // in their preferred way (React Router, Next.js router, etc.)
+                  if (onCustomAction) {
+                    onCustomAction(action, currentContext);
+                  } else {
+                    // Fallback to window.location for basic redirect
+                    console.log(`Redirecting to: ${url}`);
+                    if (typeof window !== "undefined" && url) {
+                      window.location.href = url;
+                    }
+                  }
+                }
+                break;
+              case "preventDefault":
+                // Handle preventing default form behavior
+                // This action is typically handled at the form level
+                // We'll trigger the custom action handler to let the consuming
+                // application decide how to prevent default behavior
+                if (onCustomAction) {
+                  onCustomAction(action, currentContext);
+                } else {
+                  console.log("Form default behavior should be prevented");
                 }
                 break;
             }
@@ -591,11 +906,10 @@ export function useFormRules<T extends FieldValues>({
     transformFunctions,
     schema,
     onCustomAction,
-    form,
     validator,
     context,
     getValues,
-    // NOTE: dispatch is intentionally excluded to prevent infinite loops
+    toast,
   ]);
 
   // Create modified schema based on rule results

@@ -7,6 +7,7 @@ import {
   withFormProvider,
   fieldAssertions,
 } from "@/lib/storybook-utils";
+import { z } from "zod/v4";
 
 const meta: Meta<typeof SchemaField> = {
   ...createFieldMeta("form/SchemaField", SchemaField),
@@ -390,7 +391,7 @@ export const RequiredField: Story = {
     try {
       const errorMessages = canvas.getAllByText(/required/i);
       expect(errorMessages.length).toBeGreaterThan(0);
-    } catch (error) {
+    } catch {
       // If no validation messages found, that's ok for this test
       console.log(
         "No validation message found - component may not show validation immediately"
@@ -426,7 +427,7 @@ export const WithCustomDescription: Story = {
 export const FallbackTextField: Story = {
   args: createStoryArgs({
     name: "fallbackField",
-    property: { type: "unknown" } as any,
+    property: { type: "unknown" } as z.core.JSONSchema.BaseSchema,
     required: false,
     description: "Unknown schema type falls back to text field",
   }),

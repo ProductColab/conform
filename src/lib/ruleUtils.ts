@@ -1,5 +1,79 @@
 import { ComparisonOperator } from "../schemas/rule.schema";
-import type { RuleMetadata } from "../schemas/rule.schema";
+import type {
+  RuleMetadata,
+  BaseCondition,
+  ComplexCondition,
+  RuleCondition,
+} from "../schemas/rule.schema";
+
+/**
+ * Type guard to check if a condition is a BaseCondition
+ */
+export function isBaseCondition(
+  condition: RuleCondition
+): condition is BaseCondition {
+  return (
+    "field" in condition &&
+    "operator" in condition &&
+    !("conditions" in condition)
+  );
+}
+
+/**
+ * Type guard to check if a condition is a ComplexCondition
+ */
+export function isComplexCondition(
+  condition: RuleCondition
+): condition is ComplexCondition {
+  return (
+    "operator" in condition &&
+    "conditions" in condition &&
+    !("field" in condition)
+  );
+}
+
+/**
+ * Type guard to check if a value is a valid ComparisonOperator
+ */
+export function isValidComparisonOperator(
+  operator: string
+): operator is ComparisonOperator {
+  const validOperators = [
+    "equals",
+    "not_equals",
+    "greater_than",
+    "greater_than_or_equal",
+    "less_than",
+    "less_than_or_equal",
+    "contains",
+    "not_contains",
+    "starts_with",
+    "ends_with",
+    "in",
+    "not_in",
+    "is_empty",
+    "is_not_empty",
+    "matches_regex",
+    "not_matches_regex",
+    "email_format",
+    "url_format",
+    "phone_format",
+    "credit_card_format",
+    "uuid_format",
+    "before_date",
+    "after_date",
+    "is_weekend",
+    "is_business_day",
+    "between",
+    "not_between",
+    "multiple_of",
+    "is_integer",
+    "length_equals",
+    "length_greater_than",
+    "length_less_than",
+  ];
+  return validOperators.includes(operator as ComparisonOperator);
+}
 
 /**
  * Helper function to create strongly-typed rule metadata

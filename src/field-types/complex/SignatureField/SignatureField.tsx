@@ -14,6 +14,12 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
+// Type for signature point data from react-signature-canvas
+// The actual Point type from react-signature-canvas is complex and includes methods
+// Using any here is safe as we're just passing data through to the library
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SignatureData = any[][];
+
 type SignatureFieldProps = {
   name: string;
   property: z.core.JSONSchema.Schema;
@@ -32,11 +38,7 @@ export function SignatureField({
 }: SignatureFieldProps) {
   const formContext = useFormContext();
   const signatureRef = useRef<SignatureCanvas>(null);
-  const [signatureData, setSignatureData] = useState<any[][]>([]);
-
-  if (!formContext) {
-    return null;
-  }
+  const [signatureData, setSignatureData] = useState<SignatureData>([]);
 
   // Extract signature-specific metadata with defaults
   const {
@@ -56,7 +58,7 @@ export function SignatureField({
     if (signatureRef.current) {
       signatureRef.current.clear();
       setSignatureData([]);
-      formContext.setValue(name, undefined);
+      formContext?.setValue(name, undefined);
     }
   }, [name, formContext]);
 
@@ -68,13 +70,13 @@ export function SignatureField({
 
       // Update form value
       if (newData.length === 0) {
-        formContext.setValue(name, undefined);
+        formContext?.setValue(name, undefined);
       } else {
         const dataUrl = signatureRef.current.toDataURL(
           outputFormat === "jpeg" ? "image/jpeg" : "image/png",
           outputFormat === "jpeg" ? compressionLevel : undefined
         );
-        formContext.setValue(
+        formContext?.setValue(
           name,
           saveAsDataUrl ? dataUrl : signatureRef.current.toData()
         );
@@ -123,7 +125,7 @@ export function SignatureField({
       setSignatureData(currentData);
 
       if (signatureRef.current.isEmpty()) {
-        formContext.setValue(name, undefined);
+        formContext?.setValue(name, undefined);
       } else {
         if (saveAsDataUrl) {
           let dataUrl: string;
@@ -145,10 +147,10 @@ export function SignatureField({
               outputFormat === "jpeg" ? compressionLevel : undefined
             );
           }
-          formContext.setValue(name, dataUrl);
+          formContext?.setValue(name, dataUrl);
         } else {
           // Save as point data array
-          formContext.setValue(name, currentData);
+          formContext?.setValue(name, currentData);
         }
       }
     }
@@ -166,7 +168,7 @@ export function SignatureField({
 
   // Load existing signature data if available
   useEffect(() => {
-    const existingValue = formContext.getValues(name);
+    const existingValue = formContext?.getValues(name);
     if (existingValue && signatureRef.current) {
       if (
         typeof existingValue === "string" &&
@@ -181,6 +183,11 @@ export function SignatureField({
       }
     }
   }, [name, formContext]);
+
+  // Early return after all hooks have been called
+  if (!formContext) {
+    return null;
+  }
 
   const isEmpty = signatureRef.current?.isEmpty() ?? true;
 

@@ -1,5 +1,5 @@
 import React from "react";
-import type { ComparisonOperator } from "../schemas/rule.schema";
+import type { ComparisonOperator, RuleMetadata } from "../schemas/rule.schema";
 import {
   getOperatorsByCategory,
   operatorSupportsType,
@@ -28,7 +28,7 @@ export const OperatorSelector: React.FC<OperatorSelectorProps> = ({
 
     Object.entries(operatorsByCategory).forEach(
       ([categoryKey, categoryData]) => {
-        const filteredOperators: Record<string, any> = {};
+        const filteredOperators: Record<string, RuleMetadata> = {};
 
         Object.entries(categoryData.operators).forEach(
           ([operatorKey, operatorMeta]) => {

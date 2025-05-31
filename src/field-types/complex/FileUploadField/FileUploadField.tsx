@@ -30,19 +30,6 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
   const [previews, setPreviews] = useState<FilePreview[]>([]);
   const [uploading, setUploading] = useState(false);
 
-  if (!formContext) {
-    return null;
-  }
-
-  const {
-    field: { value = [], onChange, onBlur },
-    fieldState: { error },
-  } = useController({
-    name,
-    control: formContext.control,
-    defaultValue: [],
-  });
-
   // Extract file upload specific metadata with defaults
   const {
     accept,
@@ -55,6 +42,15 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
     allowedTypes = [],
     compressionOptions,
   } = metadata;
+
+  const {
+    field: { value = [], onChange, onBlur },
+    fieldState: { error },
+  } = useController({
+    name,
+    control: formContext?.control,
+    defaultValue: [],
+  });
 
   const validateFile = useCallback(
     (file: File): string | null => {
@@ -163,6 +159,11 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
     disabled: uploading,
     noClick: !dragDrop, // If dragDrop is false, disable click to open file dialog
   });
+
+  // Early return after all hooks have been called
+  if (!formContext) {
+    return null;
+  }
 
   const dropzoneProps = dragDrop ? getRootProps() : {};
 

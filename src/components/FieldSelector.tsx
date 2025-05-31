@@ -1,5 +1,5 @@
 import React from "react";
-import type { FieldSchemas } from "../lib/fieldUtils";
+import type { FieldInfo, FieldSchemas } from "../lib/fieldUtils";
 import { getFieldsByCategory } from "../lib/fieldUtils";
 
 interface FieldSelectorProps {
@@ -39,7 +39,7 @@ export const FieldSelector: React.FC<FieldSelectorProps> = ({
               .map(([categoryKey, categoryData]) => (
                 <optgroup key={categoryKey} label={categoryData.meta.label}>
                   {Object.entries(categoryData.fields).map(
-                    ([fieldKey, fieldData]: [string, any]) => (
+                    ([fieldKey, fieldData]: [string, FieldInfo]) => (
                       <option
                         key={fieldKey}
                         value={fieldKey}

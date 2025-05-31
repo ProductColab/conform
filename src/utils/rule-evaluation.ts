@@ -12,9 +12,53 @@ import {
   type RuleCondition,
   type RuleContext,
 } from "../schemas/rule.schema";
+import { isBaseCondition, isComplexCondition } from "../lib/ruleUtils";
 
 export type CustomFunctions = Record<string, (...args: unknown[]) => unknown>;
 export type TransformFunctions = Record<string, (value: unknown) => unknown>;
+
+/**
+ * Type guard to check if a value is a valid ComparisonOperator
+ */
+export function isValidComparisonOperator(
+  operator: string
+): operator is ComparisonOperator {
+  const validOperators = [
+    "equals",
+    "not_equals",
+    "greater_than",
+    "greater_than_or_equal",
+    "less_than",
+    "less_than_or_equal",
+    "contains",
+    "not_contains",
+    "starts_with",
+    "ends_with",
+    "in",
+    "not_in",
+    "is_empty",
+    "is_not_empty",
+    "matches_regex",
+    "not_matches_regex",
+    "email_format",
+    "url_format",
+    "phone_format",
+    "credit_card_format",
+    "uuid_format",
+    "before_date",
+    "after_date",
+    "is_weekend",
+    "is_business_day",
+    "between",
+    "not_between",
+    "multiple_of",
+    "is_integer",
+    "length_equals",
+    "length_greater_than",
+    "length_less_than",
+  ];
+  return validOperators.includes(operator as ComparisonOperator);
+}
 
 /**
  * Mapping from our operators to JSONLogic operators
@@ -376,21 +420,29 @@ export function evaluateComplexCondition(
 ): boolean {
   if (!condition.conditions.length) return true;
 
-  const results = condition.conditions.map((subCondition) =>
-    "conditions" in subCondition
-      ? evaluateComplexCondition(
-          subCondition as ComplexCondition,
-          context,
-          customFunctions,
-          transformFunctions
-        )
-      : evaluateBaseCondition(
-          subCondition as BaseCondition,
-          context,
-          customFunctions,
-          transformFunctions
-        )
-  );
+  const results = condition.conditions.map((subCondition) => {
+    // Type assertion to help TypeScript understand the union type
+    const typedCondition = subCondition as RuleCondition;
+
+    if (isComplexCondition(typedCondition)) {
+      return evaluateComplexCondition(
+        typedCondition,
+        context,
+        customFunctions,
+        transformFunctions
+      );
+    } else if (isBaseCondition(typedCondition)) {
+      return evaluateBaseCondition(
+        typedCondition,
+        context,
+        customFunctions,
+        transformFunctions
+      );
+    } else {
+      console.warn("Unknown subcondition type:", typedCondition);
+      return false;
+    }
+  });
 
   switch (condition.operator) {
     case "and":
@@ -414,20 +466,26 @@ export function evaluateRuleCondition(
   transformFunctions: TransformFunctions = {}
 ): boolean {
   try {
-    if ("conditions" in condition) {
+    if (isComplexCondition(condition)) {
       return evaluateComplexCondition(
-        condition as ComplexCondition,
+        condition,
         context,
         customFunctions,
         transformFunctions
       );
     }
-    return evaluateBaseCondition(
-      condition as BaseCondition,
-      context,
-      customFunctions,
-      transformFunctions
-    );
+    if (isBaseCondition(condition)) {
+      return evaluateBaseCondition(
+        condition,
+        context,
+        customFunctions,
+        transformFunctions
+      );
+    }
+
+    // This should never happen with proper types, but provides a fallback
+    console.warn("Unknown condition type:", condition);
+    return false;
   } catch (error) {
     console.error("Error evaluating rule condition:", error);
     return false;
